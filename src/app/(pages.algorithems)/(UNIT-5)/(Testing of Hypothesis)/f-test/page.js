@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import FTestSolver from './algorithems.f-test';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function FTestPage() {
   return (
@@ -90,6 +91,9 @@ export default function FTestPage() {
             </h2>
             <FTestSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

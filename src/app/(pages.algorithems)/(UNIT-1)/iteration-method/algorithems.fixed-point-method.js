@@ -208,7 +208,7 @@ const FixedPointMethod = () => {
   };
 
   return (
-    <div className="w-full mx-auto p-4 text-black bg-white dark:text-white dark:bg-neutral-700">
+    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
       <div className="flex justify-between items-center mb-6 text-slate-900 dark:text-white">
         <h1 className="text-2xl font-bold mb-4">Fixed-Point (Iteration) Method Solver</h1>
 

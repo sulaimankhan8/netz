@@ -147,7 +147,7 @@ export default function GaussForwardInterpolation({ theme }) {
   };
 
   return (
-    <div className="container mx-auto md:p-8 transition-all duration-300 dark:bg-neutral-700 dark:text-white">
+    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 transition-all duration-300 dark:text-white">
       <div className="flex justify-between items-center mb-6 text-slate-900 dark:text-white">
         <h1 className="text-2xl font-bold">Gauss Forward Interpolation Calculator</h1>
         <TButton

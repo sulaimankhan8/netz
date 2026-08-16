@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import EulerMethodSolver from './algorithems.euler-method';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function EulerMethodPage() {
   return (
@@ -32,8 +33,8 @@ export default function EulerMethodPage() {
 
           {/* Formula Callout */}
           <div className="space-y-3">
-            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">Formula for Euler&apos;s Method:</p>
-            <div className="w-full md:w-[80%] p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
+            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 text-center">Formula for Euler&apos;s Method:</p>
+            <div className="w-full md:w-[80%] mx-auto p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
               <BlockMath math={`y_{n+1} = y_n + h \\cdot f(x_n, y_n)`} />
             </div>
             <div className="space-y-2 text-lg text-gray-700 dark:text-gray-300 pl-4">
@@ -55,7 +56,7 @@ export default function EulerMethodPage() {
               Example of Euler&apos;s Method
             </h2>
 
-            <div className="w-full md:w-[80%] p-5 bg-emerald-50/60 dark:bg-neutral-900 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm space-y-2 text-center">
+            <div className="w-full md:w-[80%] mx-auto p-5 bg-emerald-50/60 dark:bg-neutral-900 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm space-y-2 text-center">
               <p className="text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Solve Differential Equation</p>
               <BlockMath math={`\\frac{dy}{dx} = x + y, \\quad y(0) = 1`} />
               <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 pt-1">Find <InlineMath math="y(0.2)" /> with <InlineMath math="h = 0.1" /></p>
@@ -70,7 +71,7 @@ export default function EulerMethodPage() {
             {/* Step 2 */}
             <div className="space-y-2 py-1">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 2: First Iteration (<InlineMath math="x_1 = 0.1" />)</h3>
-              <div className="w-full md:w-[80%] p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-1">
+              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-1">
                 <BlockMath math={`f(x_0, y_0) = 0 + 1 = 1`} />
                 <BlockMath math={`y_1 = 1 + (0.1)(1) = 1.1`} />
               </div>
@@ -79,14 +80,14 @@ export default function EulerMethodPage() {
             {/* Step 3 */}
             <div className="space-y-2 py-1">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 3: Second Iteration (<InlineMath math="x_2 = 0.2" />)</h3>
-              <div className="w-full md:w-[80%] p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-1">
+              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-1">
                 <BlockMath math={`f(x_1, y_1) = 0.1 + 1.1 = 1.2`} />
                 <BlockMath math={`y_2 = 1.1 + (0.1)(1.2) = 1.22`} />
               </div>
             </div>
 
             {/* Conclusion Box */}
-            <div className="w-full md:w-[80%] p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2">
+            <div className="w-full md:w-[80%] mx-auto p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2 text-center">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Conclusion</h2>
               <BlockMath math={`\\boxed{y(0.2) \\approx 1.22000}`} />
               <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -102,6 +103,9 @@ export default function EulerMethodPage() {
             </h2>
             <EulerMethodSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

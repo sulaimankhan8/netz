@@ -6,6 +6,7 @@ import Head from 'next/head';
 import ThemeToggle from "../../../../components/ThemeToggle";
 import FullscreenToggle from "@/app/components/FullscreenToggle";
 import GaussForwardInterpolation from "./algorithems.gauss-forward-interpolations";
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function GaussForwardInterpolations() {
   const formula = `
@@ -172,6 +173,9 @@ export default function GaussForwardInterpolations() {
             <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
               <GaussForwardInterpolation />
             </div>
+
+            {/* Sequential Routing Navigation */}
+            <AlgorithmNavigation />
           </section>
         </div>
       </FullscreenToggle>

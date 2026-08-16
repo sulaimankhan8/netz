@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import StraightLineSolver from './algorithems.straight-line';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function FittingStraightLinesPage() {
   return (
@@ -118,6 +119,9 @@ export default function FittingStraightLinesPage() {
             </h2>
             <StraightLineSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

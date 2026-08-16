@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import FittingParabolaSolver from './algorithems.fitting-parabola';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function FittingParabolaPage() {
   return (
@@ -114,6 +115,9 @@ export default function FittingParabolaPage() {
             </h2>
             <FittingParabolaSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

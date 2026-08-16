@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import RungeKuttaSolver from './algorithems.runge-kutta';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function RungeKuttaMethodPage() {
   return (
@@ -32,7 +33,7 @@ export default function RungeKuttaMethodPage() {
 
           {/* Formula Callouts */}
           <div className="space-y-3">
-            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">RK4 Slopes & Update Formulas:</p>
+            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 text-center">RK4 Slopes & Update Formulas:</p>
             <div className="mx-auto w-full md:w-[80%] p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center space-y-2">
               <BlockMath math={`k_1 = h \\cdot f(x_n, y_n)`} />
               <BlockMath math={`k_2 = h \\cdot f\\left(x_n + \\frac{h}{2}, y_n + \\frac{k_1}{2}\\right)`} />
@@ -84,7 +85,7 @@ export default function RungeKuttaMethodPage() {
             </div>
 
             {/* Conclusion Box */}
-            <div className="mx-auto w-full md:w-[80%] p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2">
+            <div className="mx-auto w-full md:w-[80%] p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2 text-center">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Conclusion</h2>
               <BlockMath math={`\\boxed{y(0.1) \\approx 1.11034}`} />
               <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -100,6 +101,9 @@ export default function RungeKuttaMethodPage() {
             </h2>
             <RungeKuttaSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

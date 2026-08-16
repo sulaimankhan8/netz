@@ -4,8 +4,8 @@ import FullscreenToggle from "@/app/components/FullscreenToggle";
 import LagrangeInterpolations from "./algorithems.lagrange-interpolations";
 import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
-import PageButton from "../../../../components/pageButton";
 import ThemeToggle from "../../../../components/ThemeToggle";
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function LagrangeInterpolationPage() {
   const data = [
@@ -138,6 +138,8 @@ export default function LagrangeInterpolationPage() {
             <LagrangeInterpolations />
           </div>
 
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

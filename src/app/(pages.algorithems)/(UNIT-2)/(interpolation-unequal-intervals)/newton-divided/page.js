@@ -5,6 +5,7 @@ import { InlineMath, BlockMath } from "react-katex";
 import ThemeToggle from "../../../../components/ThemeToggle";
 import FullscreenToggle from "@/app/components/FullscreenToggle";
 import NewtonsDividedDifference from "./algorithems.newton-s-divided-difference-interpolations";
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function NewtonsDividedDifferences() {
   const formula = `f(x)=y_0+(x-x_0)f[x_0,x_1]+(x-x_0)(x-x_1)f[x_0,x_1,x_2]+(x-x_0)(x-x_1)(x-x_2)f[x_0,x_1,x_2,x_3]`;
@@ -137,6 +138,8 @@ export default function NewtonsDividedDifferences() {
             <NewtonsDividedDifference />
           </div>
 
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

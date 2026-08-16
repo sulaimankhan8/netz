@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import ZTestSolver from './algorithems.z-test';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function TestOfSignificancePage() {
   return (
@@ -91,6 +92,9 @@ export default function TestOfSignificancePage() {
             </h2>
             <ZTestSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

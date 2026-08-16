@@ -4,8 +4,8 @@ import { InlineMath, BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
 import NewtonForwardInterpolations from "./algorithems.newton-forward-interpolations";
 import FullscreenToggle from "@/app/components/FullscreenToggle";
-import PageButton from "../../../../components/pageButton";
 import ThemeToggle from '@/app/components/ThemeToggle';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function NewtonForwardInterpolation() {
   const str = `P(x) = y_0 + v \\cdot \\Delta y_0 + \\frac{v(v-1)}{2!} \\cdot \\Delta^2 y_{0} + \\frac{v(v-1)(v-2)}{3!} \\cdot \\Delta^3 y_0`;
@@ -169,11 +169,8 @@ export default function NewtonForwardInterpolation() {
               <NewtonForwardInterpolations />
             </div>
 
-            {/* Page Buttons */}
-            <div className="flex justify-between mt-8">
-              <PageButton text="Back to Home" href="/Home" />
-              <PageButton text="Newton Backward" href="/newton-backward" />
-            </div>
+            {/* Sequential Routing Navigation */}
+            <AlgorithmNavigation />
           </section>
         </div>
       </FullscreenToggle>

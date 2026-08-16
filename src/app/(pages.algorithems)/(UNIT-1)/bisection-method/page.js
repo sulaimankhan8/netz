@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import BisectionMethod from './algorithems.bisection-method';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function BisectionMethods() {
   return (
@@ -187,6 +188,9 @@ export default function BisectionMethods() {
           <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
             <BisectionMethod />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

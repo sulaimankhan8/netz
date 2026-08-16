@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import IterationMethod from './algorithems.fixed-point-method';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function IterationMethods() {
   return (
@@ -97,6 +98,9 @@ export default function IterationMethods() {
           <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
             <IterationMethod />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

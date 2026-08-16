@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import FalsePositionMethod from './algorithems.false-positions-method';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function FalsePositionMethods() {
   return (
@@ -87,6 +88,9 @@ export default function FalsePositionMethods() {
           <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
             <FalsePositionMethod />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

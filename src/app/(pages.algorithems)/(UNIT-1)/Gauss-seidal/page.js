@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import GaussSeidel from './algorithems.gauss-seidale-method';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 import { STATUS } from 'react-joyride';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -268,10 +269,14 @@ const GaussSeidelPage = () => {
                 </p>
               </div>
             </div>
-          </section>
 
-          <section className="step-intro-5 pt-8 border-t border-gray-300 dark:border-neutral-700">
-            <GaussSeidel />
+            {/* Interactive Calculator Section */}
+            <div className="step-intro-5 pt-8 border-t border-gray-300 dark:border-neutral-700">
+              <GaussSeidel />
+            </div>
+
+            {/* Sequential Routing Navigation */}
+            <AlgorithmNavigation />
           </section>
         </div>
       </FullscreenToggle>

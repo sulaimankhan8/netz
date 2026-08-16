@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import WeddleRuleSolver from './algorithems.weddle-rule';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function WeddleRulePage() {
   return (
@@ -23,18 +24,18 @@ export default function WeddleRulePage() {
 
           {/* Overview */}
           <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-            <strong>Weddle&apos;s Rule</strong> is an extremely accurate Newton-Cotes integration formula of degree 6. It approximates the definite integral <InlineMath math="\int_{a}^{b} f(x) \, dx" /> by interpolating groups of seven points with 6th-degree polynomials.
+            <strong>Weddle&apos;s Rule</strong> is a highly accurate numerical integration method derived from Newton-Cotes formulas by using a 6th-order polynomial approximation across 7 equally spaced points over every block.
           </p>
 
           <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-            A strict requirement for Weddle&apos;s Rule is that the number of subintervals <InlineMath math="n" /> <strong>must be a multiple of 6</strong> (e.g. <InlineMath math="n = 6, 12, 18" />).
+            A key requirement of Weddle&apos;s Rule is that the total number of subintervals <InlineMath math="n" /> <strong>must be a multiple of 6</strong> (e.g. <InlineMath math="n = 6, 12, 18" />).
           </p>
 
           {/* Formula Callout */}
           <div className="space-y-3">
-            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">Formula for Weddle&apos;s Rule:</p>
-            <div className="w-full md:w-[80%] p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
-              <BlockMath math={`I = \\int_{a}^{b} f(x) \, dx \\approx \\frac{3h}{10} \\left[ y_0 + 5y_1 + y_2 + 6y_3 + y_4 + 5y_5 + y_6 \\right]`} />
+            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 text-center">Formula for Weddle&apos;s Rule:</p>
+            <div className="w-full md:w-[80%] mx-auto p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
+              <BlockMath math={`I \\approx \\frac{3h}{10} \\left[ y_0 + 5y_1 + y_2 + 6y_3 + y_4 + 5y_5 + 2y_6 + \\dots \\right]`} />
             </div>
             <div className="space-y-2 text-lg text-gray-700 dark:text-gray-300 pl-4">
               <p className="font-semibold">Where:</p>
@@ -43,7 +44,6 @@ export default function WeddleRulePage() {
                 <li><InlineMath math="b" /> is the upper limit of integration.</li>
                 <li><InlineMath math="n" /> is the number of subintervals (<strong>must be a multiple of 6</strong>).</li>
                 <li><InlineMath math="h = \frac{b - a}{n}" /> is the step size.</li>
-                <li><InlineMath math="y_0, y_1, y_2, y_3, y_4, y_5, y_6" /> are ordinates evaluated with weights <InlineMath math="(1, 5, 1, 6, 1, 5, 1)" />.</li>
               </ul>
             </div>
           </div>
@@ -56,16 +56,16 @@ export default function WeddleRulePage() {
               Example of Weddle&apos;s Rule
             </h2>
 
-            <div className="w-full md:w-[80%] p-5 bg-emerald-50/60 dark:bg-neutral-900 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm space-y-2 text-center">
+            <div className="w-full md:w-[80%] mx-auto p-5 bg-emerald-50/60 dark:bg-neutral-900 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm space-y-2 text-center">
               <p className="text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Evaluate Definite Integral</p>
               <BlockMath math={`\\int_{0}^{6} \\frac{1}{1 + x^2} \, dx`} />
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 pt-1">With <InlineMath math="n = 6 \text{ subintervals (multiple of 6)}" /></p>
+              <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 pt-1">With <InlineMath math="n = 6 \text{ subintervals}" /></p>
             </div>
 
             {/* Step 1 */}
             <div className="space-y-2 py-1">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 1: Find Step Size (<InlineMath math="h" />)</h3>
-              <div className="w-full md:w-[80%] p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center">
+              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center">
                 <BlockMath math={`h = \\frac{6 - 0}{6} = 1.0`} />
               </div>
             </div>
@@ -73,35 +73,36 @@ export default function WeddleRulePage() {
             {/* Step 2 */}
             <div className="space-y-2 py-1">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 2: Determine Grid Points (<InlineMath math="x_i" />)</h3>
-              <div className="w-full md:w-[80%] p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-2">
-                <BlockMath math={`x_0 = 0, \\quad x_1 = 1, \\quad x_2 = 2, \\quad x_3 = 3, \\quad x_4 = 4, \\quad x_5 = 5, \\quad x_6 = 6`} />
+              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-2">
+                <BlockMath math={`x_0 = 0, \\quad x_1 = 1, \\quad x_2 = 2, \\quad x_3 = 3`} />
+                <BlockMath math={`x_4 = 4, \\quad x_5 = 5, \\quad x_6 = 6`} />
               </div>
             </div>
 
             {/* Step 3 */}
             <div className="space-y-2 py-1">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 3: Evaluate Function Values (<InlineMath math="y_i = \frac{1}{1 + x_i^2}" />)</h3>
-              <div className="w-full md:w-[80%] p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-1">
-                <BlockMath math={`y_0 = 1.0, \\quad y_1 = 0.5, \\quad y_2 = 0.2`} />
-                <BlockMath math={`y_3 = 0.1, \\quad y_4 = 0.0588, \\quad y_5 = 0.0385, \\quad y_6 = 0.027`} />
+              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-1">
+                <BlockMath math={`y_0 = 1.0000, \\quad y_1 = 0.5000, \\quad y_2 = 0.2000`} />
+                <BlockMath math={`y_3 = 0.1000, \\quad y_4 = 0.0588, \\quad y_5 = 0.0385, \\quad y_6 = 0.0270`} />
               </div>
             </div>
 
             {/* Step 4 & 5 */}
             <div className="space-y-2 py-1">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 4 & 5: Apply Weddle&apos;s Formula</h3>
-              <div className="w-full md:w-[80%] p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-2">
-                <BlockMath math={`I \\approx \\frac{3(1.0)}{10} \\left[ 1.0 + 5(0.5) + 0.2 + 6(0.1) + 0.0588 + 5(0.0385) + 0.027 \\right]`} />
-                <BlockMath math={`I \\approx 0.30 \\times 4.57816 \\approx 1.37345`} />
+              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-2">
+                <BlockMath math={`I \\approx \\frac{3(1.0)}{10} \\left[ 1.0 + 5(0.5) + 0.2 + 6(0.1) + 0.0588 + 5(0.0385) + 0.0270 \\right]`} />
+                <BlockMath math={`I \\approx 0.3 \\times 4.5773 \\approx 1.3732`} />
               </div>
             </div>
 
             {/* Conclusion Box */}
-            <div className="w-full md:w-[80%] p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2">
+            <div className="w-full md:w-[80%] mx-auto p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2 text-center">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Conclusion</h2>
-              <BlockMath math={`\\boxed{\\int_{0}^{6} \\frac{1}{1 + x^2} \, dx \\approx 1.37345}`} />
+              <BlockMath math={`\\boxed{\\int_{0}^{6} \\frac{1}{1 + x^2} \, dx \\approx 1.3732}`} />
               <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                Therefore, using <strong>Weddle&apos;s Rule</strong> with <InlineMath math="n = 6" />, the approximate value of the integral is <strong>1.37345</strong> (exact value <InlineMath math="\arctan 6 \approx 1.40565" />).
+                Therefore, using <strong>Weddle&apos;s Rule</strong> with <InlineMath math="n = 6" />, the approximate value of the integral is <strong>1.3732</strong> (exact value <InlineMath math="\arctan(6) \approx 1.4056" />).
               </p>
             </div>
           </div>
@@ -113,6 +114,9 @@ export default function WeddleRulePage() {
             </h2>
             <WeddleRuleSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

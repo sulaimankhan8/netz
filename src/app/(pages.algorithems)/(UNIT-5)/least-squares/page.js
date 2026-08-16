@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import LeastSquaresSolver from './algorithems.least-squares';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function LeastSquaresPage() {
   return (
@@ -109,6 +110,9 @@ export default function LeastSquaresPage() {
             </h2>
             <LeastSquaresSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

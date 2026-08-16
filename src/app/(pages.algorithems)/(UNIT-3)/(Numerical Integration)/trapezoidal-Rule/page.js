@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import TrapezoidalRuleSolver from './algorithems.trapezoidal-rule';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function TrapezoidalRulePage() {
   return (
@@ -116,6 +117,9 @@ export default function TrapezoidalRulePage() {
             </h2>
             <TrapezoidalRuleSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

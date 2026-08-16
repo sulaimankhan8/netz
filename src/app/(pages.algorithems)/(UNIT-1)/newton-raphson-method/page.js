@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import NewtonRaphsonMethod from './aldorithems.newton-raphson';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function NewtonRaphsonMethods() {
   return (
@@ -95,6 +96,9 @@ export default function NewtonRaphsonMethods() {
           <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
             <NewtonRaphsonMethod />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>

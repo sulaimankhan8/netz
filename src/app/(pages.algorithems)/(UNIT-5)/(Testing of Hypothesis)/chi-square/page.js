@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import ChiSquareSolver from './algorithems.chi-square';
+import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function ChiSquarePage() {
   return (
@@ -91,6 +92,9 @@ export default function ChiSquarePage() {
             </h2>
             <ChiSquareSolver />
           </div>
+
+          {/* Sequential Routing Navigation */}
+          <AlgorithmNavigation />
         </section>
       </div>
     </FullscreenToggle>
