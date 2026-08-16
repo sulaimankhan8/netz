@@ -6,7 +6,8 @@ import { InlineMath, BlockMath } from "react-katex";
 import React, { useState } from 'react';
 import TButton from '../../../components/TButton'; // Adjust the path based on your project structure
 import Plot from './Plot'; // Chart.js based Plot component
-import ExportToPNG from '../../../utils/ExportToPNG'; // Adjust the path based on your project structure
+import ExportToPNG from '../../../utils/ExportToPNG';
+import { parseUserFunction } from "@/app/utils/evaluateMath";
 
 const FixedPointMethod = () => {
   const [functionInput, setFunctionInput] = useState("cos(x)"); // Default function
@@ -134,12 +135,10 @@ const FixedPointMethod = () => {
     // Convert user input to a function
     let g;
     try {
-      const updatedFunctionInput = replaceFunctions(functionInput.trim());
-      g = new Function('x', `return ${updatedFunctionInput};`);
-      // Test the function with a sample input to catch errors
+      g = parseUserFunction(functionInput.trim());
       g(0);
     } catch (err) {
-      setError("Invalid function input. Please ensure the function is valid and uses JavaScript syntax.");
+      setError("Invalid function input. Please enter a valid mathematical expression like cos(x).");
       return;
     }
 

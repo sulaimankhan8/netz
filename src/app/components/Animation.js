@@ -1,19 +1,30 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import Lottie from 'react-lottie';
+import dynamic from 'next/dynamic';
+
+const Lottie = dynamic(() => import('react-lottie'), { ssr: false });
 
 const LottieAnimation = ({ src, height = 300, width = 300, loop = true, autoplay = true }) => {
   const [animationData, setAnimationData] = useState(null);
+  const [isClient, setIsClient] = useState(false);
 
-  // Load animation data dynamically
   useEffect(() => {
+    setIsClient(true);
     const loadAnimation = async () => {
-      const response = await fetch(src);  // Dynamically fetch the JSON file
-      const data = await response.json();
-      setAnimationData(data);
+      try {
+        const response = await fetch(src);
+        const data = await response.json();
+        setAnimationData(data);
+      } catch (err) {
+        console.error('Failed to load lottie animation:', err);
+      }
     };
 
     loadAnimation();
   }, [src]);
+
+  if (!isClient || !animationData) return null;
 
   const defaultOptions = {
     loop,
@@ -23,9 +34,6 @@ const LottieAnimation = ({ src, height = 300, width = 300, loop = true, autoplay
       preserveAspectRatio: 'xMidYMid slice'
     }
   };
-
-  // Don't render Lottie until the animationData is loaded
-  if (!animationData) return null;
 
   return (
     <div>

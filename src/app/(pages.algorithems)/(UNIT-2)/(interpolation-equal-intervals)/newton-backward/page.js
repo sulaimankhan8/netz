@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
@@ -6,261 +6,168 @@ import PageButton from "../../../../components/pageButton";
 import Head from 'next/head';
 import NewtonBackwardInterpolations from "./algorithems.newton-backward-interpolations";
 import ThemeToggle from "../../../../components/ThemeToggle";
-import FullscreenToggle from "../../../../components/FullscreanToggle";
+import FullscreenToggle from "@/app/components/FullscreenToggle";
 
 export default function NewtonBackwardInterpolation() {
+  const str = `P(x) = y_n + v \\cdot \\Delta y_n + \\frac{v(v+1)}{2!} \\cdot \\Delta^2 y_{n-2} + \\frac{v(v+1)(v+2)}{3!} \\Delta^{3} y_{n-3} \\ldots`;
+  const data = [
+    { xxx: 24, yyy: 28.0600, deltaY: '', delta2Y: '', delta3Y: '', delta4Y: '' },
+    { xxx: 28, yyy: 30.1900, deltaY: 2.1300, delta2Y: '', delta3Y: '', delta4Y: '' },
+    { xxx: 32, yyy: 32.7500, deltaY: 2.5600, delta2Y: 0.4300, delta3Y: '', delta4Y: '' },
+    { xxx: 36, yyy: 34.9400, deltaY: 2.1900, delta2Y: -0.3700, delta3Y: -0.8000, delta4Y: '' },
+    { xxx: 40, yyy: 40.0000, deltaY: 5.0600, delta2Y: 2.8700, delta3Y: 3.2400, delta4Y: 4.0400 },
+  ];
 
-    const str = `P(x) = y_n + v \\cdot \\Delta y_n + \\frac{v(v+1)}{2!} \\cdot \\Delta^2 y_{n-2} + \\frac{v(v+1)(v+2)}{3!} \\Delta^{3} y_{n-3} \\ldots`;
-    const data = [
-        { xxx: 24, yyy: 28.0600, deltaY: '', delta2Y: '', delta3Y: '', delta4Y: '' },
-        { xxx: 28, yyy: 30.1900, deltaY: 2.1300, delta2Y: '', delta3Y: '', delta4Y: '' },
-        { xxx: 32, yyy: 32.7500, deltaY: 2.5600, delta2Y: 0.4300, delta3Y: '', delta4Y: '' },
-        { xxx: 36, yyy: 34.9400, deltaY: 2.1900, delta2Y: -0.3700, delta3Y: -0.8000, delta4Y: '' },
-        { xxx: 40, yyy: 40.0000, deltaY: 5.0600, delta2Y: 2.8700, delta3Y: 3.2400, delta4Y: 4.0400 },
-    ];
-    const formula = `
+  const formula = `
     P(x) = y_n + v \\cdot \\Delta y_n + \\frac{v(v+1)}{2!} \\cdot \\Delta^2 y_{n-2} 
     + \\frac{v(v+1)(v+2)}{3!} \\cdot \\Delta^3 y_{n-3} 
     + \\frac{v(v+1)(v+2)(v+3)}{4!} \\cdot \\Delta^4 y_{n-4} + \\cdots
   `;
 
-  
-    return (
-        <>
-        <Head>
+  return (
+    <>
+      <Head>
         <title>Newton Backward Interpolation | Netz</title>
-        <meta
-          name="description"
-          content="Master Newton Backward Interpolation method with step-by-step explanations and examples. Netz makes it easy to understand complex interpolation techniques."
-        />
-        <meta
-          name="keywords"
-          content="Newton backward interpolation, interpolation methods, Netz, math problem solving"
-        />
-        <meta name="author" content="Netz" />
-        <meta property="og:title" content="Newton Backward Interpolation | Netz" />
-        <meta
-          property="og:description"
-          content="Learn Newton Backward Interpolation with examples and explanations to enhance your understanding of interpolation techniques."
-        />
-        <meta property="og:url" content="https://netz-ruby.vercel.app/newton-backward" />
-        <meta property="og:type" content="article" />
-        <meta property="og:image" content="https://netz-ruby.vercel.app/images/icon.svg" />
-        <meta property="og:image" content="https://netz-ruby.vercel.app/images/newton-backward-og-image.jpeg" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Newton Backward Interpolation | Netz" />
-        <meta
-          name="twitter:description"
-          content="Master Newton Backward Interpolation with easy-to-follow steps on Netz."
-        />
-       <meta name="twitter:image" content="https://netz-ruby.vercel.app/images/icon.svg" />
-       <meta name="twitter:image:src" content="https://netz-ruby.vercel.app/images/newton-backward-twitter-card.jpeg" />
+        <meta name="description" content="Master Newton Backward Interpolation method with step-by-step explanations and examples." />
       </Head>
 
-            <FullscreenToggle className="dark:bg-neutral-700">
-
+      <FullscreenToggle className="dark:bg-neutral-800 w-full min-h-screen">
+        <div className="md:ml-[80px]">
+          <section className="container mx-auto px-4 md:px-8 py-10 dark:bg-neutral-800 dark:text-white space-y-8">
             
+            {/* Header */}
+            <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-neutral-700">
+              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+                Newton Backward Interpolation Method
+              </h1>
+              <ThemeToggle />
+            </div>
 
-                <div className="md:ml-[80px]">
-                <section className="container mx-auto px-8 pt-10 dark:bg-neutral-700 dark:text-white">
-                    <h1 className="text-2xl font-bold pb-5 inline-block
-                    ">Newton Backward Interpolation Method</h1>
-     <div className="switch float-right inline-block absolute">
-     <ThemeToggle />
-  
-  
-</div>
+            {/* Overview */}
+            <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+              Newton Backward Interpolation is used to estimate the value of a function at a given point when the data points are tabulated at equal intervals. This method is particularly useful when you want to interpolate a value near the end of the data set. It utilizes backward differences to form the interpolation polynomial.
+            </p>
 
-                    <p className="text-base pl-1" >Newton Backward Interpolation is used to estimate the value of a function at a given point when the data points are tabulated at equal intervals. This method is particularly useful when you want to interpolate a value near the end of the data set. It utilizes backward differences to form the interpolation polynomial.<br></br><br></br>
+            {/* Formula Callout */}
+            <div className="space-y-3">
+              <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 text-center">Formula for Newton Backward Interpolation:</p>
+              <div className="w-full md:w-[80%] mx-auto p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
+                <BlockMath math={formula} />
+              </div>
+              <div className="space-y-2 text-lg text-gray-700 dark:text-gray-300 pl-4">
+                <p className="font-semibold">Where:</p>
+                <ul className="list-disc list-inside space-y-1 pl-2">
+                  <li><InlineMath math="v = \frac{x - x_n}{h}" /></li>
+                  <li><InlineMath math="x_n" /> is the last value of <InlineMath math="x" /> in the data.</li>
+                  <li><InlineMath math="h" /> is the uniform difference between the <InlineMath math="x" /> values (where <InlineMath math="h = x_n - x_{n-1}" />).</li>
+                  <li><InlineMath math="\Delta y_n, \Delta^2 y_n, \dots" /> are the backward differences.</li>
+                </ul>
+              </div>
+            </div>
 
-                        The formula for Newton Backward Interpolation is:</p>
+            <hr className="my-8 border-gray-300 dark:border-neutral-700" />
 
-                    <div className="bg-gray-100 p-4 border dark:bg-neutral-800 overflow-auto border-gray-300 rounded-lg shadow-md">
-                        <BlockMath math={formula} />
-                    </div>
-                    <div className="pl-1"><p className="text-xl">where:</p>
-                        <ul className={"list-disc list-inside text-lg p-3"}>
-                            <li><InlineMath math="v = \frac{x - x_n}{h}" /></li>
-                            <li><InlineMath math="x_n" /> is the last value of <InlineMath math="x" /> in the data.</li>
+            {/* Example Section */}
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-neutral-700">
+                Example of Newton Backward Interpolation
+              </h2>
 
-                            <li><InlineMath math="h" /> is the uniform difference between the <InlineMath math="x" /> values (where <InlineMath math="h = x_n - x_{n-1}" />).
-                            </li>
-                            <li><InlineMath math="\Delta y_n, \Delta^2 y_n, \dots" />
-                                are the backward differences.</li>
-                        </ul> <p>This method is efficient for interpolating at or near the end of the data set.</p>
-                    </div>
-                </section>
+              <p className="text-lg text-gray-700 dark:text-gray-300">Let&apos;s say we are given the following data points:</p>
 
-                <section className="container mx-auto sm:p-8  dark:bg-neutral-700 dark:text-white">
-                    <div className="sm:p-4 ">
-                        <h1 className="text-2xl font-bold mb-4">Example of Newton Backward Interpolation</h1>
-                        <h2>Let&apos;ss say we are given the following data points:</h2><br></br>
-                        <div className="p-4 flex justify-center overflow-hidden">
-                            <table className="w-[80%] border-collapse border rounded-xl overflow-hidden ">
-                                <thead>
-                                    <tr>
-                                        <th className="border px-4 py-2 bg-gray-100 dark:bg-neutral-800 text-left">
-                                            <InlineMath math="x" />
-                                        </th>
-                                        <th className="border px-4 py-2 bg-gray-100    dark:bg-neutral-800 text-left">
-                                            <InlineMath math="y" />
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.map((row, index) => (
-                                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-50 dark:bg-neutral-700' : ' dark:bg-neutral-600'} >
-                                            <td className="border  px-4  py-2">{row.xxx}</td>
-                                            <td className="border px-4 py-2">{row.yyy}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table></div>
-                    </div>
-                    <p className=" p-4">We are tasked with finding <InlineMath math="y" /> where <InlineMath math="x = 33" /></p><br></br>
+              {/* Data Table */}
+              <div className="flex justify-center overflow-x-auto my-4">
+                <table className="w-full max-w-md border-collapse border border-gray-200 dark:border-neutral-700 rounded-xl overflow-hidden shadow-sm">
+                  <thead>
+                    <tr className="bg-gray-100 dark:bg-neutral-900">
+                      <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center text-gray-900 dark:text-white"><InlineMath math="x" /></th>
+                      <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center text-gray-900 dark:text-white"><InlineMath math="y" /></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((row, index) => (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-gray-50 dark:bg-neutral-800' : 'bg-white dark:bg-neutral-900'}>
+                        <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.xxx}</td>
+                        <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.yyy}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-                    <div className=" p-4">
-                        <p><span className="font-bold text-lg">Step 1:</span> Calculate the backward differences for the <InlineMath math="y" /> values.</p><br></br>
-                        <div className=" flex justify-center overflow-x-auto ">
-                            <div className="w-full max-w-4xl">
-                                <table className="w-full  rounded-lg overflow-x-auto">
-                                    <thead>
-                                        <tr>
-                                            <th className=" px-4 py-2 bg-gray-100   dark:bg-neutral-800 text-left rounded-tl-2xl">
-                                                <InlineMath math="x" />
-                                            </th>
-                                            <th className="border px-4 py-2 bg-gray-100 text-left  dark:bg-neutral-800">
-                                                <InlineMath math="y" />
-                                            </th>
-                                            <th className="border px-4 py-2 bg-gray-100 text-left  dark:bg-neutral-800">
-                                                <InlineMath math={'{\\Delta y} '} />
-                                            </th>
-                                            <th className="border px-4 py-2 bg-gray-100 text-left  dark:bg-neutral-800">
-                                                <InlineMath math={'{\\Delta^2 y} '} />
-                                            </th>
-                                            <th className="border px-4 py-2 bg-gray-100 text-left  dark:bg-neutral-800">
-                                                <InlineMath math={'{\\Delta^3 y} '} />
-                                            </th>
-                                            <th className=" px-4 py-2 bg-gray-100 text-left rounded-tr-2xl  dark:bg-neutral-800">
-                                                <InlineMath math={'{\\Delta^4 y} '} />
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody >
-                                        {data.map((row, index) => (
-                                            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50  dark:bg-neutral-700' : ' dark:bg-neutral-600'}>
-                                                <td className="border px-4 py-2 ">{row.xxx}</td>
-                                                <td className="border px-4 py-2">{row.yyy}</td>
-                                                <td className="border px-4 py-2">{row.deltaY}</td>
-                                                <td className="border px-4 py-2">{row.delta2Y}</td>
-                                                <td className="border px-4 py-2">{row.delta3Y}</td>
-                                                <td className="border px-4 py-2">{row.delta4Y}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div><br></br>
+              <p className="text-lg text-gray-700 dark:text-gray-300">We are tasked with finding <InlineMath math="y" /> where <InlineMath math="x = 33" />.</p>
 
+              {/* Step 1: Backward Difference Table */}
+              <div className="space-y-3 py-1">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 1: Calculate Backward Differences</h3>
+                <div className="flex justify-center overflow-x-auto my-2">
+                  <table className="w-full max-w-3xl border-collapse border border-gray-200 dark:border-neutral-700 rounded-xl overflow-hidden shadow-sm">
+                    <thead>
+                      <tr className="bg-gray-100 dark:bg-neutral-900">
+                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="x" /></th>
+                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="y" /></th>
+                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="{\Delta y}" /></th>
+                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="{\Delta^2 y}" /></th>
+                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="{\Delta^3 y}" /></th>
+                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="{\Delta^4 y}" /></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.map((row, index) => (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-50 dark:bg-neutral-800' : 'bg-white dark:bg-neutral-900'}>
+                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.xxx}</td>
+                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.yyy}</td>
+                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.deltaY}</td>
+                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.delta2Y}</td>
+                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.delta3Y}</td>
+                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.delta4Y}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-                    <div className="p-4">
-                        <p className="text-xl "><span className="font-bold  text-lg">Step 2:</span> use the formula <InlineMath math="v = \frac{x - x_n}{h}" /> values.</p><br></br>
-                        <InlineMath math="\text{Given } x = 33 \text{ and } x_n = 40 \text{ with } h = 4," />
-                        <BlockMath math="v = \frac{x - x_n}{h}" />
-                        <BlockMath math="v = \frac{33 - 40}{4}" />
-                        <BlockMath math="v = -1.75" />
-                    </div><br></br>
+              {/* Step 2 */}
+              <div className="space-y-2 py-1">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 2: Calculate v</h3>
+                <p className="text-gray-700 dark:text-gray-300">Using the formula <InlineMath math="v = \frac{x - x_n}{h}" />:</p>
+                <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-2">
+                  <BlockMath math={"\\text{Given } x = 33, x_n = 40, h = 4"} />
+                  <BlockMath math="v = \frac{33 - 40}{4} = -1.75" />
+                </div>
+              </div>
 
-                    <div className="p-4"> 
-                        <p className="text-xl"><span className="font-bold text-lg">Step 3:</span>  Apply the Newton Backward Interpolation formula:</p><br></br>
+              {/* Step 3 */}
+              <div className="space-y-2 py-1">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 3: Apply Newton Backward Formula</h3>
+                <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-2">
+                  <BlockMath math={str} />
+                </div>
+              </div>
 
-                        <div className="mb-4">
-                            <p className="text-lg font-semibold mb-2"></p>
-                            <div className="bg-gray-100 p-4 border overflow-auto border-gray-300 rounded-lg shadow-md dark:bg-neutral-900">
-                                <BlockMath math={formula} />
-                            </div>
-                        </div>
+              {/* Conclusion Box */}
+              <div className="w-full md:w-[80%] mx-auto p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2 text-center">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Conclusion</h2>
+                <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                  Newton Backward Interpolation efficiently computes values near the bottom of tabulated datasets using backward difference tables.
+                </p>
+              </div>
+            </div>
 
-                        <div className="mb-4">
-                            <p className="text-lg font-semibold mb-2">Substituting the values:</p>
-                            <div className="bg-gray-100 p-4 border border-gray-300 rounded-lg shadow-md overflow-auto line-wrap-custom dark:bg-neutral-900">
-                                <BlockMath
-                                    math={`P(40) = 40 + 
-    \\frac{(-1.75 \\cdot (-1.75+1))}{1!} \\cdot 5.0600 + 
-    \\frac{(-1.75 \\cdot (-1.75+1) \\cdot (-1.75+2))}{2!} \\cdot 2.8700 + 
-    \\frac{(-1.75 \\cdot (-1.75+1) \\cdot (-1.75+2) \\cdot (-1.75+3))}{3!} \\cdot 3.2400 + 
-    \\frac{(-1.75 \\cdot (-1.75+1) \\cdot (-1.75+2) \\cdot (-1.75+3) \\cdot (-1.75+4))}{4!} \\cdot 4.0400`}
-                                />
-                            </div>
+            {/* Calculator Component */}
+            <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
+              <NewtonBackwardInterpolations />
+            </div>
 
-                        </div>
-                    </div>
-
-
-                    <div className="sm:py-8">
-                        <h1 className="py-5 text-lg">Step-by-step:</h1>
-                        <ol className="list-decimal text-lg pl-5">
-
-                            <li className="py-3 overflow-auto"><p>First term: <InlineMath math={`40`} /> </p></li>
-
-                            <li className="py-3 spa overflow-auto "><p>Second term: <InlineMath math={`\\frac{(−1.75)}{1!}∗5.0600 = −8.85500`} /> </p></li>
-
-                            <li className="py-3 overflow-auto "><p>Third term: <InlineMath math={`\\frac{(−1.75∗(−1.75+1))}{2!} ∗2.8700  = 0.17718 `} /> </p></li>
-
-                            <li className="py-3 overflow-auto "><p>Fourth term: <InlineMath math={`\\frac{(−1.75∗(−1.75+1)∗(−1.75+2))}{3!} ∗3.2400 = 0.17718 `} /> </p></li>
-
-                            <li className="py-3 overflow-auto  "><p>Fifth term: <InlineMath math={`\\frac{(−1.75∗(−1.75+1)∗(−1.75+2)∗(−1.75+3))}{4!} ∗4.0400 =0.06904 `} /> </p></li>
-                        </ol>
-
-                        <div className=" text-lg">
-
-                            <p className=" font-bold my-2">Adding them together:</p>
-                            <div className="p-3 my-3  ">
-                                <InlineMath math={'P(33)= 40+(−8.855000000000004)+(1.883437500000003)+(0.1771875000000003)+(0.06904296875000004)'} />
-                            </div>
-
-
-                            <p >Thus, the interpolated value of <InlineMath math={`y   `} /> at <InlineMath math={'x = 33'} /> is approximately <InlineMath math={`33.27466    `} />  </p></div>  </div>
-
-
-                </section>
-
-
-
-
-
-
-
-                <section className="p-5 dark:bg-neutral-700">
-                    <NewtonBackwardInterpolations />
-                </section>
-                <section className="p-8 m-4">
-  <div className="flex justify-between items-center">
-    <PageButton 
-      st="prev"
-      route="/newton-foward"
-    />
-    
-    <div className="flex-grow flex justify-center mx-4">
-      <PageButton 
-        st="home"
-        route="/"
-      />
-    </div>
-    
-    <PageButton 
-      st="next"
-      route="/newton-backward"
-    />
-  </div>
-</section>
-
-</div>
-
-            </FullscreenToggle></>
-
-        
-
-    );
+            {/* Page Buttons */}
+            <div className="flex justify-between mt-8">
+              <PageButton text="Newton Forward" href="/newton-forward" />
+              <PageButton text="Gauss Forward" href="/gauss-forward" />
+            </div>
+          </section>
+        </div>
+      </FullscreenToggle>
+    </>
+  );
 }

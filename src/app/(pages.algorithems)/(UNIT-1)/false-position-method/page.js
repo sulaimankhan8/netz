@@ -1,124 +1,94 @@
-"use client";
-import React from "react";
-import { BlockMath, InlineMath } from "react-katex";
-import "katex/dist/katex.min.css";
+'use client';
 
-import FullscreenToggle from "@/app/components/FullscreanToggle";
-import FalsePositionMethod from "./algorithems.false-positions-method";
-import ThemeToggle from "@/app/components/ThemeToggle";
-
-
-
+import React from 'react';
+import { BlockMath, InlineMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+import FullscreenToggle from '@/app/components/FullscreenToggle';
+import ThemeToggle from '@/app/components/ThemeToggle';
+import FalsePositionMethod from './algorithems.false-positions-method';
 
 export default function FalsePositionMethods() {
+  return (
+    <FullscreenToggle className="dark:bg-neutral-800 w-full min-h-screen">
+      <div className="md:ml-[80px]">
+        <section className="container mx-auto px-4 md:px-8 py-10 dark:bg-neutral-800 dark:text-white space-y-8">
+          
+          {/* Header */}
+          <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-neutral-700">
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+              False Position Method (Regula Falsi)
+            </h1>
+            <ThemeToggle />
+          </div>
 
-    return (
-        <FullscreenToggle className="dark:bg-neutral-700 w-full">
-            <div className="md:ml-[80px]">
-                <section className="container mx-auto px-8 pt-10 dark:bg-neutral-700 dark:text-white space-y-4">
-                    <h1 className="text-2xl font-bold  inline-block">
-                        False Position Method
-                    </h1>
-                    <div className="switch float-right inline-block fixed">
-                        <ThemeToggle />
-                    </div>
-                    <p className="text-base pl-1">
-                        The False Position Method, also known as the Regula Falsi Method, is a numerical technique used to find approximate roots of a real-valued continuous function. It is a bracketing method, meaning it starts with two initial points that bracket a root (i.e., the function changes sign between them) and iteratively refines this interval to approach the root. </p>
-                    <br />
-                    <p className="text-xl">Given a function:</p>
-                    <div className="bg-gray-100 p-4 border dark:bg-neutral-800 overflow-auto border-gray-300 rounded-lg shadow-md step-intro-2 ">
+          {/* Overview */}
+          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+            The False Position Method (or Regula Falsi) is a root-finding algorithm that combines features of the Bisection Method and the Secant Method. It approximates the root of a continuous function by drawing a secant line between two initial points with opposite signs.
+          </p>
 
-                        <BlockMath math={`f(x) = 0`} />
+          {/* Formula Callout */}
+          <div className="space-y-3">
+            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 text-center">Formula for False Position Method:</p>
+            <div className="w-full md:w-[80%] mx-auto p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
+              <BlockMath math={`c = \\frac{a \\cdot f(b) - b \\cdot f(a)}{f(b) - f(a)}`} />
+            </div>
+            <div className="space-y-2 text-lg text-gray-700 dark:text-gray-300 pl-4">
+              <p className="font-semibold">Where:</p>
+              <ul className="list-disc list-inside space-y-1 pl-2">
+                <li><InlineMath math="a" /> and <InlineMath math="b" /> are initial guesses such that <InlineMath math="f(a)" /> and <InlineMath math="f(b)" /> have opposite signs.</li>
+                <li><InlineMath math="c" /> is the x-intercept of the secant line joining <InlineMath math="(a, f(a))" /> and <InlineMath math="(b, f(b))" />.</li>
+              </ul>
+            </div>
+          </div>
 
-                        <BlockMath math="C =  \frac{a \cdot f(b) - b \cdot f(a)}{f(b) - f(a)} " />
-                    </div>
+          <hr className="my-8 border-gray-300 dark:border-neutral-700" />
 
+          {/* Example Section */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-neutral-700">
+              Example
+            </h2>
 
-
-                    <div className=" mb-4 space-y-4  sm:text-2xl">
-                        <h2 className="text-xl font-semibold mt-6">
-                            How the False Position Method Works
-                        </h2>
-                        <ol className="list-decimal list-inside mb-4 space-y-4 ml-5 sm:text-xl">
-                            <li>
-                                <strong>Root of a Function:</strong> A value  <InlineMath math={` C `} /> such that
-                                <InlineMath math={` f(C) = 0`} /> .
-                            </li>
-                            <li>
-                                <strong>Initial Bracketing:</strong>  Choose two initial points 𝑎 and 𝑏 such that
-                                <InlineMath math=" f(a) . f(b) < 0 " />. This ensures that there is at least one root between 𝑎 and 𝑏.
-                            </li>
-                            <li>
-                                <strong>Calculate the False Position (Regula Falsi) Point:</strong>
-                                <p>The next approximation <InlineMath math={` C `} /> is found using the formula:</p>
-                                <BlockMath math="C =  \frac{a \cdot f(b) - b \cdot f(a)}{f(b) - f(a)} " />
-                                <p>This formula derives from the equation of the straight line (secant line) connecting <InlineMath math=" (a , f(a) ) \text{ and } ( b , f(b) )" /> and finding its intersection with the x-axis.</p>
-                            </li>
-                            <li>
-                                <strong>Evaluate  <InlineMath math={`f(C)`} />:</strong>
-                                <ul className="ml-3 list-inside list-disc">
-                                    <li> If  <InlineMath math={` f(C) = 0  ,  C`} /> is the root. </li>
-                                    <li> If  <InlineMath math={` f(a) . f(b) < 0  ,`} />  the root lies between 𝑎 and <InlineMath math={` C `} />. Set 𝑏 = <InlineMath math={` C `} />. </li>
-                                    <li> If  <InlineMath math={` f(C) . f(b) < 0  ,`} />  the root lies between <InlineMath math={` C `} /> and 𝑏. Set 𝑎 = <InlineMath math={` C `} />. </li>
-                                </ul>
-                            </li>
-                            <li>
-                                <strong>Iterate:</strong>
-                                <p> Repeat steps 2 and 3 until the approximate root <InlineMath math={` C `} /> converges to a desired level of accuracy.</p>
-
-                            </li>
-                        </ol>
-                    </div>
-
-                    <div className="space-y-4 step-intro-4 text-lg">
-                        <h2 className="text-xl font-semibold mt-6 ">Example</h2>
-                        <div className="bg-gray-100 p-4 border dark:bg-neutral-800 overflow-auto border-gray-300 rounded-lg shadow-md step-intro-2 ">
-                            <p className="ml-5 ">Given Function</p>
-                            <BlockMath>
-                                {` x^2 = 4`}
-                            </BlockMath>
-                            <h2 className="ml-5">Error Margin is 0.01</h2>
-                        </div>
-                        <h3 className="my-4 font-semibold">Step 1: Initial Bracketing:</h3>
-                        <BlockMath math="\text{Choose} \; a = 1, f(a) = 1^2 - 4 = -3" />
-                        <BlockMath math="\text{Choose} \; b = 3, f(b) = 3^2 - 4 = 5" />
-                        <InlineMath math="\text{Since} \ f(a) \cdot f(b) = -3 \cdot 5 < 0, \; a \text{ and } b \text{ bracket the root.}" />
-
-                        <h3 className="mt-4 font-semibold">Step 2: Calculate C:</h3>
-                        <BlockMath math="C = \frac{a \cdot f(b) - b \cdot f(a)}{f(b) - f(a)}" />
-                        <BlockMath math="C = \frac{1 \cdot 5 - 3 \cdot (-3)}{5 - (-3)} = \frac{5 + 9}{8} = \frac{14}{8} = 1.75" />
-                        <BlockMath math="f(C) = f(1.75) = (1.75)^2 - 4 = 3.0625 - 4 = -0.9375" />
-                        <InlineMath math="\text{Since} \; f(a) \cdot f(C) = -3 \cdot (-0.9375) > 0, \; \text{set } a = 1.75." />
-
-                        <h3 className="mt-4 font-semibold">Step 3: Second Iteration:</h3>
-                        <BlockMath math="C = \frac{a \cdot f(b) - b \cdot f(a)}{f(b) - f(a)} \approx \frac{1.75 \cdot 5 - 3 \cdot (-0.9375)}{5 - (-0.9375)} \approx 1.9474" />
-                        <BlockMath math="f(1.9474) \approx (1.9474)^2 - 4 \approx 3.7925 - 4 = -0.2075" />
-                        <InlineMath math="\text{Since} \; f(a) \cdot f(C) \approx -0.9375 \cdot (-0.2075) > 0, \; \text{set } a = 1.9474." />
-
-                        <h3 className="mt-4 font-semibold">Step 4: Third Iteration:</h3>
-                        <BlockMath math="C = \frac{a \cdot f(b) - b \cdot f(a)}{f(b) - f(a)} \approx 1.988" />
-                        <BlockMath math="f(1.988) \approx (1.988)^2 - 4 \approx 3.952 - 4 = -0.048" />
-                        <InlineMath math="\text{Since} \; f(a) \cdot f(C) \approx -0.2075 \cdot (-0.048) > 0, \; \text{set } a = 1.988." />
-
-                        <h3 className="mt-4 font-semibold">Continue Iterating:</h3>
-                        <p>Repeating this process will yield increasingly accurate approximations of the root.</p>
-                        <BlockMath math="x \approx 2" />
-
-                        <div className="space-y-5 pb-8">
-        <h2 className="text-xl mt-6 font-semibold">Conclusion</h2>
-        <p>
-          The False Position Method is an efficient way to find the root of a function defined by a continuous equation. 
-          In this case, we demonstrated it for <InlineMath math={` f(x) = x^2 - 4`} /> and found that the root is 
-          <InlineMath math={` x = 2 `} />. The method guarantees convergence as long as you start with points that bracket the root, 
-          making it a reliable technique for root-finding problems.
-        </p>
-      </div></div>
-                </section>
-                <section className=" container mx-auto ">
-                    <FalsePositionMethod />
-                </section>
+            <div className="w-full md:w-[80%] mx-auto p-5 bg-emerald-50/60 dark:bg-neutral-900 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm space-y-2 text-center">
+              <p className="text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Given Function</p>
+              <BlockMath math={`f(x) = x^3 - 2x - 5 = 0`} />
+              <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 pt-1">Error Margin is 0.001</p>
             </div>
 
-        </FullscreenToggle>
-    );
+            {/* Step 1 */}
+            <div className="space-y-2 py-1">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 1: Choose Initial Points</h3>
+              <p className="text-gray-700 dark:text-gray-300">Choose <InlineMath math="a = 2" /> and <InlineMath math="b = 3" />:</p>
+              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm space-y-2 text-center">
+                <BlockMath math="f(2) = 2^3 - 2(2) - 5 = -1 \quad (\text{negative})" />
+                <BlockMath math="f(3) = 3^3 - 2(3) - 5 = 16 \quad (\text{positive})" />
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="space-y-2 py-1">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 2: Calculate First Approximation</h3>
+              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm space-y-2 text-center">
+                <BlockMath math="c_1 = \frac{2(16) - 3(-1)}{16 - (-1)} = \frac{32 + 3}{17} = \frac{35}{17} \approx 2.0588" />
+                <BlockMath math="f(2.0588) = (2.0588)^3 - 2(2.0588) - 5 \approx -0.3908" />
+              </div>
+            </div>
+
+            {/* Conclusion Box */}
+            <div className="w-full md:w-[80%] mx-auto p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2 text-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Conclusion</h2>
+              <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                By repeating the False Position formula, the root converges to <strong>2.0945</strong>.
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Calculator Section */}
+          <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
+            <FalsePositionMethod />
+          </div>
+        </section>
+      </div>
+    </FullscreenToggle>
+  );
 }

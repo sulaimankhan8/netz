@@ -6,11 +6,11 @@ import React, { useState } from 'react';
 import TButton from '../../../components/TButton';
 import Plot from '../bisection-method/Plot';
 import ExportToPNG from "@/app/utils/ExportToPNG";
+import { parseUserFunction } from "@/app/utils/evaluateMath";
 
 const FalsePositionMethod = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
-
-  const [functionInput, setFunctionInput] = useState("x ** 2 - 4"); // Default function
+  const [functionInput, setFunctionInput] = useState("x^2 - 4"); // Default function
   const [tolerance, setTolerance] = useState(0.0001);
   const [result, setResult] = useState(null);
   const [intervalSteps, setIntervalSteps] = useState([]);
@@ -44,11 +44,10 @@ const FalsePositionMethod = () => {
     // Convert user input to a function
     let f;
     try {
-      f = new Function('x', `return ${functionInput};`);
-      // Test the function with a sample input to catch errors
+      f = parseUserFunction(functionInput);
       f(0);
     } catch (err) {
-      setError("Invalid function input. Please ensure the function is valid and uses JavaScript syntax.");
+      setError("Invalid function input. Please enter a valid mathematical expression like x^2 - 4 or x**2 - 4.");
       return;
     }
 
@@ -72,12 +71,10 @@ const FalsePositionMethod = () => {
   };
 
   // Function to find interval automatically
-  
   const findInterval = (f, maxRange = 1000, step = 1) => {
     const steps = [];
     let fa, fb, a, b;
 
-    // Helper function to evaluate f(x) safely
     const evaluateFunction = (x) => {
       try {
         const fx = f(x);
@@ -89,14 +86,11 @@ const FalsePositionMethod = () => {
       }
     };
 
-    // Search in the positive direction
     a = 0;
     fa = evaluateFunction(a);
     if (fa === null) {
-      // If f(a) couldn't be evaluated, skip to negative search
       steps.push(`Skipping positive direction due to evaluation error at x = ${a}`);
     } else if (fa === 0) {
-      // Exact root found
       steps.push(`Exact root found at x = ${a} `);
       return { interval: [a-1, a+1], steps };
     } else {
@@ -105,37 +99,30 @@ const FalsePositionMethod = () => {
         if (fx === null) continue;
 
         if (fx === 0) {
-          // Exact root found
           steps.push(`Exact root found at x = ${x},\n Sign change detected between x = ${x-1} and x = ${x+1}`);
           return { interval: [x-1, x+1], steps };
         }
 
         if (fa * fx < 0) {
-          // Sign change detected
           b = x;
           fb = fx;
           steps.push(`Sign change detected between x = ${a} and x = ${b}`);
           return { interval: [a, b], steps };
         }
 
-        // Update for next iteration
         a = x;
         fa = fx;
       }
     }
 
-    // If no interval found in positive direction, search in negative direction
     steps.push(`No valid interval found in positive direction up to x = ${maxRange}. Searching in negative direction.`);
     
-    // Reset for negative search
     a = 0;
     fa = evaluateFunction(a);
     if (fa === null) {
-      // If f(a) couldn't be evaluated, return null
       steps.push(`Skipping negative direction due to evaluation error at x = ${a}`);
       return { interval: null, steps };
     } else if (fa === 0) {
-      // Exact root found
       steps.push(`Exact root found at x = ${a}`);
       return { interval: [a, a], steps };
     } else {
@@ -144,102 +131,74 @@ const FalsePositionMethod = () => {
         if (fx === null) continue;
 
         if (fx === 0) {
-          // Exact root found
           steps.push(`Exact root found at x = ${x}`);
           return { interval: [x, x], steps };
         }
 
         if (fa * fx < 0) {
-          // Sign change detected
           b = x;
           fb = fx;
           steps.push(`Sign change detected between x = ${a} and x = ${b}`);
-          return { interval: [b, a], steps }; // Ensure a < b
+          return { interval: [b, a], steps };
         }
 
-        // Update for next iteration
         a = x;
         fa = fx;
       }
     }
 
-    // If no interval found in both directions
-    steps.push(`No valid interval found in both positive and negative directions within the range [-${maxRange}, ${maxRange}].`);
+    steps.push(`No valid interval found in negative direction up to x = -${maxRange}.`);
     return { interval: null, steps };
   };
-  // False Position Method Implementation
-  const falsePositionMethod = (f, a, b, tolerance = 1e-5, maxIterations = 1000) => {
-    const iterations = [];
 
-    let fa = f(a);
-    let fb = f(b);
-
-    if (fa * fb >= 0) {
-        return { message: "False Position method fails. f(a) and f(b) must have opposite signs.", iterations };
-    }
-
+  const falsePositionMethod = (f, a, b, tol, maxIter = 100) => {
+    let iterations = [];
     let c = a;
-    let fc = fa;
-    let iteration = 0;
+    let iter = 0;
 
-    while (iteration < maxIterations) {
-        // Calculate the false position using the new formula
-        c = (a * fb - b * fa) / (fb - fa);
-        try {
-            fc = f(c);
-        } catch (err) {
-            return { message: `Error evaluating function at c = ${c}.`, iterations };
-        }
+    while (iter < maxIter) {
+      iter++;
 
-        iterations.push({
-            iteration: iteration + 1,
-            a: a,
-            b: b,
-            c: c,
-            fa: fa,
-            fb: fb,
-            fc: fc
-        });
+      const fa = f(a);
+      const fb = f(b);
 
-        // Check for convergence
-        if (Math.abs(fc) < tolerance || Math.abs(b - a) < tolerance) {
-            return { message: `Root found at x = ${c.toFixed(6)} after ${iteration + 1} iterations.`, iterations };
-        }
+      c = (a * fb - b * fa) / (fb - fa);
+      const fc = f(c);
 
-        // Decide the side to repeat the steps
-        if (fa * fc < 0) {
-            b = c;
-            fb = fc;
-        } else {
-            a = c;
-            fa = fc;
-        }
+      iterations.push({ iteration: iter, a, b, c, fa, fb, fc });
 
-        iteration++;
+      if (Math.abs(fc) < tol) {
+        return {
+          message: `Root found at x = ${c.toFixed(6)} with tolerance ${tol}`,
+          iterations,
+        };
+      }
+
+      if (fa * fc < 0) {
+        b = c;
+      } else {
+        a = c;
+      }
     }
 
-    return { message: `Maximum iterations reached. Approximate root at x = ${c.toFixed(6)}.`, iterations };
-};
+    return {
+      message: `Max iterations reached. Approximate root at x = ${c.toFixed(6)}`,
+      iterations,
+    };
+  };
 
-
-  // Handle Demo button click
   const handleDemo = async () => {
     setDemoInProgress(true);
-    setFunctionInput("x ** 2 - 4"); // Example function f(x) = x^2 - 4
+    setFunctionInput("x^2 - 4");
     setTolerance(0.0001);
 
-    // Wait for state to update
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Trigger calculation
-    document.getElementById("Calculate").click();
-
+    const syntheticEvent = { preventDefault: () => {} };
+    handleSubmit(syntheticEvent);
     setDemoInProgress(false);
   };
 
-  // Handle Reset button click
   const handleReset = () => {
-    setFunctionInput("");
+    setFunctionInput("x^2 - 4");
     setTolerance(0.0001);
     setResult(null);
     setIntervalSteps([]);
@@ -249,9 +208,9 @@ const FalsePositionMethod = () => {
   };
 
   return (
-    <div className="w-full mx-auto p-4 bg-white dark:text-white dark:bg-neutral-700">
-      <div className="flex justify-between items-center mb-6 text-slate-900 dark:text-white">
-        <h1 className="text-2xl font-bold mb-4">False Position Method Solver</h1>
+    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:text-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 space-y-6">
+      <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
+        <h2 className="text-2xl font-bold">False Position Method Solver</h2>
 
         <TButton
           tooltipText="Demo"
@@ -263,27 +222,27 @@ const FalsePositionMethod = () => {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
+        <div className="p-4 bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 rounded-xl">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="function">Enter Function \(f(x)\):</label>
+          <label htmlFor="function" className="font-semibold">Enter Function <InlineMath math="f(x)" />:</label>
           <input
             type="text"
             id="function"
             value={functionInput}
             onChange={handleFunctionChange}
-            placeholder="e.g., x ** 2 - 4"
+            placeholder="e.g., x^2 - 4 or x ** 2 - 4"
             required
-            className="w-full p-2 border dark:border-gray-600 rounded-md dark:bg-neutral-800 dark:text-white"
+            className="w-full p-3 border border-gray-300 dark:border-neutral-600 rounded-xl dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="tolerance">Enter Tolerance:</label>
+          <label htmlFor="tolerance" className="font-semibold">Enter Tolerance:</label>
           <input
             type="number"
             id="tolerance"
@@ -292,15 +251,15 @@ const FalsePositionMethod = () => {
             onChange={handleToleranceChange}
             placeholder="e.g., 0.0001"
             required
-            className="w-full p-2 border dark:border-gray-600 rounded-md dark:bg-neutral-800 dark:text-white"
+            className="w-full p-3 border border-gray-300 dark:border-neutral-600 rounded-xl dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
 
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center pt-2">
           <button
             type="submit"
             id="Calculate"
-            className="focus:outline-none focus:ring-2 focus:ring-offset-2 active:bg-opacity-80 text-white px-4 py-2 rounded hover:bg-green-400 bg-green-500 active:bg-green-700 focus:ring-green-700"
+            className="focus:outline-none focus:ring-2 focus:ring-offset-2 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-green-600 bg-green-500 active:bg-green-700 transition"
           >
             Calculate
           </button>
@@ -308,41 +267,40 @@ const FalsePositionMethod = () => {
           <TButton
             tooltipText="Reset"
             onClick={handleReset}
-            imgSrc="/reset.svg" // Ensure this image exists in your public folder
+            imgSrc="/reset.svg"
             altText="Reset"
-            className="float-right"
             color="red"
-            float="float-right"
           />
         </div>
       </form>
 
       {intervalSteps.length > 0 && (
-        <div className="my-4 p-4 bg-yellow-100 text-yellow-700 dark:bg-neutral-600 dark:text-gray-200 rounded">
-          <strong>Interval Detection Steps [ a , b ]:</strong>
+        <div className="p-4 bg-amber-50 dark:bg-neutral-900 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-neutral-700 rounded-xl space-y-1">
+          <strong className="block mb-1">Interval Detection Steps [ a , b ]:</strong>
           {intervalSteps.map((step, index) => (
-            <p key={index}>{step}</p>
+            <p key={index} className="text-sm">{step}</p>
           ))}
         </div>
       )}
 
       {result && (
-        <div className="my-4 p-4 bg-green-100 text-green-700 dark:bg-neutral-600 dark:text-neutral-200 rounded">
+        <div className="p-4 bg-emerald-50 dark:bg-neutral-900 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-neutral-700 rounded-xl font-semibold">
           <strong>Result:</strong> {result}
         </div>
       )}
 
       {falsePositionIterations.length > 0 && (
-        <div className="mt-6 mx-auto dark:bg-neutral-600 p-8 rounded-2xl hover:border hover:border-neutral-300">
-          <ExportToPNG 
-            elementId="graphCanvas"
-            fileName="graphCanvas.png"
-            tooltipText="Export&nbsp;Plot&nbsp;to&nbsp;PNG"
-            color="blue"
-            altText="Export Plot" 
-            float="float-right" 
-          />
-          <h2 className="text-xl font-semibold mb-2">Plot:</h2>
+        <div className="w-full mx-auto dark:bg-neutral-900 p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 shadow-sm space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Plot:</h2>
+            <ExportToPNG 
+              elementId="graphCanvas"
+              fileName="graphCanvas.png"
+              tooltipText="Export&nbsp;Plot&nbsp;to&nbsp;PNG"
+              color="blue"
+              altText="Export Plot" 
+            />
+          </div>
           <Plot 
             iterations={falsePositionIterations} 
             functionInput={functionInput}  
@@ -351,71 +309,72 @@ const FalsePositionMethod = () => {
       )}
 
       {falsePositionIterations.length > 0 && (
-        <div className="my-6 md:mx-[8rem] overflow-x-auto">
-          <h2 className="text-xl inline-block font-semibold">False Position Method Iterations:</h2>
-          <ExportToPNG 
-            elementId="Table"
-            fileName="table.png"
-            tooltipText="Export&nbsp;Table&nbsp;to&nbsp;PNG"
-            color="blue"
-            altText="Export Table" 
-            float="float-right" 
-            className="mb-4"
-          />
-          <table id="Table" className="w-full table-auto mt-4 border-collapse">
-            <thead>
-              <tr>
-                <th className="border border-gray-300 p-2">Iteration</th>
-                <th className="border border-gray-300 p-2">a</th>
-                <th className="border border-gray-300 p-2">b</th>
-                <th className="border border-gray-300 p-2">c</th>
-                <th className="border border-gray-300 p-2">f(a)</th>
-                <th className="border border-gray-300 p-2">f(b)</th>
-                <th className="border border-gray-300 p-2">f(c)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {falsePositionIterations.map((iter, index) => (
-                <tr key={index} className={index === falsePositionIterations.length - 1 ? 'bg-red-700 text-white' : ''}>
-                  <td className="border border-gray-300 p-2">{iter.iteration}</td>
-                  <td className="border border-gray-300 p-2">{iter.a.toFixed(6)}</td>
-                  <td className="border border-gray-300 p-2">{iter.b.toFixed(6)}</td>
-                  <td className="border border-gray-300 p-2">{iter.c.toFixed(6)}</td>
-                  <td className="border border-gray-300 p-2">{iter.fa.toFixed(6)}</td>
-                  <td className="border border-gray-300 p-2">{iter.fb.toFixed(6)}</td>
-                  <td className="border border-gray-300 p-2">{iter.fc.toFixed(6)}</td>
+        <div className="w-full mx-auto space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">False Position Method Iterations:</h2>
+            <ExportToPNG 
+              elementId="Table"
+              fileName="table.png"
+              tooltipText="Export&nbsp;Table&nbsp;to&nbsp;PNG"
+              color="blue"
+              altText="Export Table" 
+            />
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-neutral-700">
+            <table id="Table" className="w-full table-auto border-collapse text-center">
+              <thead>
+                <tr className="bg-gray-100 dark:bg-neutral-900">
+                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">Iteration</th>
+                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">a</th>
+                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">b</th>
+                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">c</th>
+                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">f(a)</th>
+                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">f(b)</th>
+                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">f(c)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {falsePositionIterations.map((iter, index) => (
+                  <tr key={index} className={index === falsePositionIterations.length - 1 ? 'bg-emerald-600 text-white font-bold' : (index % 2 === 0 ? 'bg-gray-50 dark:bg-neutral-800' : 'bg-white dark:bg-neutral-900')}>
+                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.iteration}</td>
+                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.a.toFixed(6)}</td>
+                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.b.toFixed(6)}</td>
+                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.c.toFixed(6)}</td>
+                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.fa.toFixed(6)}</td>
+                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.fb.toFixed(6)}</td>
+                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.fc.toFixed(6)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {falsePositionIterations.length > 0 && (
-        <div className="mt-6 text-wrap dark:bg-neutral-700 p-4 rounded">
-          <h2 className="text-xl font-semibold mb-2 inline-block">Detailed Steps:</h2>
-          <ExportToPNG 
-            elementId="steps"
-            fileName="steps.png"
-            tooltipText="Export&nbsp;Steps&nbsp;to&nbsp;PNG" 
-            color="blue" 
-            altText="Export Steps" 
-            float="float-right" 
-          />
+        <div className="w-full mx-auto text-wrap dark:bg-neutral-900 p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Detailed Steps:</h2>
+            <ExportToPNG 
+              elementId="steps"
+              fileName="steps.png"
+              tooltipText="Export&nbsp;Steps&nbsp;to&nbsp;PNG" 
+              color="blue" 
+              altText="Export Steps" 
+            />
+          </div>
           <div id="steps" className="space-y-4">
-          {falsePositionIterations.map((iter, index) => (
-  <div key={index}>
-    <h3 className="text-lg font-semibold">Iteration {iter.iteration}</h3>
-    <BlockMath math={`a^{(${iter.iteration})} = ${iter.a.toFixed(6)}`} />
-    <BlockMath math={`b^{(${iter.iteration})} = ${iter.b.toFixed(6)}`} />
-    <BlockMath 
-      math={`c^{(${iter.iteration})} = \\frac{a \\cdot f(b) - b \\cdot f(a)}{f(b) - f(a)} = \\frac{${iter.a.toFixed(6)} \\cdot ${iter.fb.toFixed(6)} - ${iter.b.toFixed(6)} \\cdot ${iter.fa.toFixed(6)}}{${iter.fb.toFixed(6)} - ${iter.fa.toFixed(6)}} = ${iter.c.toFixed(6)}`} 
-    />
-    <BlockMath math={`f(c^{(${iter.iteration})}) = ${iter.fc.toFixed(6)}`} />
-    <hr />
-  </div>
-))}
-
+            {falsePositionIterations.map((iter, index) => (
+              <div key={index} className="p-4 bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl space-y-2">
+                <h3 className="text-lg font-semibold">Iteration {iter.iteration}</h3>
+                <BlockMath math={`a^{(${iter.iteration})} = ${iter.a.toFixed(6)}`} />
+                <BlockMath math={`b^{(${iter.iteration})} = ${iter.b.toFixed(6)}`} />
+                <BlockMath 
+                  math={`c^{(${iter.iteration})} = \\frac{a \\cdot f(b) - b \\cdot f(a)}{f(b) - f(a)} = \\frac{${iter.a.toFixed(6)} \\cdot ${iter.fb.toFixed(6)} - ${iter.b.toFixed(6)} \\cdot ${iter.fa.toFixed(6)}}{${iter.fb.toFixed(6)} - ${iter.fa.toFixed(6)}} = ${iter.c.toFixed(6)}`} 
+                />
+                <BlockMath math={`f(c^{(${iter.iteration})}) = ${iter.fc.toFixed(6)}`} />
+              </div>
+            ))}
           </div>
         </div>
       )}
