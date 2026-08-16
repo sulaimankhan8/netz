@@ -21,7 +21,7 @@ export default function Loading() {
 
           {/* Central Math Icon Badge */}
           <div className="relative z-10 flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-2xl shadow-lg text-white font-bold text-2xl tracking-wider animate-pulse">
-            <span>∑</span>
+            <span>NETZ</span>
           </div>
 
           {/* Floating Math Symbols */}
@@ -33,10 +33,10 @@ export default function Loading() {
         {/* Text Details & Animated Dots */}
         <div className="space-y-2 relative z-10">
           <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-500 bg-clip-text text-transparent">
-            NETZ Engine
+            NETZ Application
           </h3>
           <p className="text-sm font-medium text-gray-600 dark:text-neutral-400 flex items-center justify-center gap-1">
-            <span>Evaluating numerical algorithm</span>
+            <span>Loading content</span>
             <span className="inline-flex gap-1 items-center ml-1">
               <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce"></span>
               <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>

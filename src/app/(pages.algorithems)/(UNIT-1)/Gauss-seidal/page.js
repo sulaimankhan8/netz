@@ -11,7 +11,7 @@ import { STATUS } from 'react-joyride';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
-const Joyride = dynamic(() => import('react-joyride'), { ssr: false });
+const Joyride = dynamic(() => import('react-joyride').then(mod => mod.Joyride), { ssr: false });
 
 const GaussSeidelSearchParamsWrapper = ({ setRunTour }) => {
   const searchParams = useSearchParams();

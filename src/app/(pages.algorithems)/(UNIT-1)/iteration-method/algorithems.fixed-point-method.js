@@ -5,7 +5,7 @@ import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
 import React, { useState } from 'react';
 import TButton from '../../../components/TButton'; // Adjust the path based on your project structure
-import Plot from './Plot'; // Chart.js based Plot component
+import Plot from '@/app/components/UnifiedPlot';
 import ExportToPNG from '../../../utils/ExportToPNG';
 import { parseUserFunction } from "@/app/utils/evaluateMath";
 
@@ -313,10 +313,9 @@ const FixedPointMethod = () => {
             float="float-right" 
           />
           <h2 className="text-xl font-semibold mb-2">Plot:</h2>
-          <Plot 
+          <UnifiedPlot 
             iterations={iterationSteps} 
             functionInput={functionInput}  
-            darkTheme={false} // Adjust based on your theme management
           />
         </div>
       )}

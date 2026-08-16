@@ -4,7 +4,7 @@ import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
 import React, { useState } from 'react';
 import TButton from '../../../components/TButton';
-import Plot from './Plot';
+import UnifiedPlot from '@/app/components/UnifiedPlot';
 import ExportToPNG from "@/app/utils/ExportToPNG";
 import { parseUserFunction } from "@/app/utils/evaluateMath";
 
@@ -302,7 +302,7 @@ const BisectionMethod = () => {
               altText="Export Plot" 
             />
           </div>
-          <Plot 
+          <UnifiedPlot 
             iterations={bisectionIterations} 
             functionInput={functionInput}  
           />

@@ -1,0 +1,148 @@
+import { INITIAL_SAMPLE_NOTES } from "./sampleNotes";
+
+const STORAGE_KEY = "netz_notes_v2_data";
+
+export function generateAccessKey() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let key = "NETZ-";
+  for (let i = 0; i < 4; i++) {
+    key += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return key;
+}
+
+export function getNotes() {
+  if (typeof window === "undefined") return INITIAL_SAMPLE_NOTES;
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (!data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_SAMPLE_NOTES));
+      return INITIAL_SAMPLE_NOTES;
+    }
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("Failed to load notes from localStorage:", err);
+    return INITIAL_SAMPLE_NOTES;
+  }
+}
+
+export function saveNotes(notes) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  } catch (err) {
+    console.error("Failed to save notes to localStorage:", err);
+  }
+}
+
+export function createNewNote() {
+  const newNote = {
+    id: "note-" + Date.now(),
+    title: "Untitled Math Note",
+    subtitle: "Click to add description...",
+    tags: ["General"],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    isPublic: false,
+    accessKey: generateAccessKey(),
+    author: "User",
+    blocks: [
+      {
+        id: "b-" + Date.now() + "-1",
+        type: "heading1",
+        content: "Heading 1"
+      },
+      {
+        id: "b-" + Date.now() + "-2",
+        type: "paragraph",
+        content: "Start typing your notes here. You can add LaTeX equations, callouts, and interactive widgets."
+      },
+      {
+        id: "b-" + Date.now() + "-3",
+        type: "math",
+        content: "f(x) = x^2 - 4"
+      }
+    ]
+  };
+
+  const existing = getNotes();
+  const updated = [newNote, ...existing];
+  saveNotes(updated);
+  return newNote;
+}
+
+export function saveSingleNote(updatedNote) {
+  const existing = getNotes();
+  const index = existing.findIndex((n) => n.id === updatedNote.id);
+  const noteToSave = {
+    ...updatedNote,
+    updatedAt: new Date().toISOString()
+  };
+
+  let updatedList;
+  if (index >= 0) {
+    updatedList = [...existing];
+    updatedList[index] = noteToSave;
+  } else {
+    updatedList = [noteToSave, ...existing];
+  }
+
+  saveNotes(updatedList);
+  return noteToSave;
+}
+
+export function deleteNote(id) {
+  const existing = getNotes();
+  const filtered = existing.filter((n) => n.id !== id);
+  saveNotes(filtered);
+  return filtered;
+}
+
+export function importNoteByKey(key) {
+  const cleanKey = key.trim().toUpperCase();
+  const existing = getNotes();
+
+  // Search local notes first
+  const match = existing.find((n) => n.accessKey === cleanKey);
+  if (match) return match;
+
+  // Search initial sample notes fallback
+  const sampleMatch = INITIAL_SAMPLE_NOTES.find((n) => n.accessKey === cleanKey);
+  if (sampleMatch) {
+    const imported = {
+      ...sampleMatch,
+      id: "imported-" + Date.now(),
+      title: `${sampleMatch.title} (Imported)`,
+      updatedAt: new Date().toISOString()
+    };
+    saveSingleNote(imported);
+    return imported;
+  }
+
+  return null;
+}
+
+export function exportNoteAsMarkdown(note) {
+  let md = `# ${note.title}\n\n`;
+  if (note.subtitle) md += `*${note.subtitle}*\n\n`;
+  md += `**Tags**: ${note.tags.join(", ")}\n`;
+  md += `**Created**: ${new Date(note.createdAt).toLocaleDateString()}\n\n`;
+  md += `---\n\n`;
+
+  note.blocks.forEach((block) => {
+    if (block.type === "heading1") md += `## ${block.content}\n\n`;
+    else if (block.type === "heading2") md += `### ${block.content}\n\n`;
+    else if (block.type === "paragraph") md += `${block.content}\n\n`;
+    else if (block.type === "math") md += `$$\n${block.content}\n$$\n\n`;
+    else if (block.type === "callout") md += `> ${block.content}\n\n`;
+    else if (block.type === "widget") md += `\`[Interactive Solver: ${block.content}]\`\n\n`;
+  });
+
+  const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${note.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_note.md`;
+  link.click();
+  URL.revokeObjectURL(url);
+}

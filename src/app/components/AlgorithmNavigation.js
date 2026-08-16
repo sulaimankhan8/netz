@@ -26,7 +26,7 @@ export const ALGORITHMS_REGISTRY = [
   { title: 'Simpson 3/8 Rule', path: '/simpson-3-8-Rule', unit: 'Unit 3' },
   { title: 'Boole\'s Rule', path: '/boole-Rule', unit: 'Unit 3' },
   { title: 'Weddle\'s Rule', path: '/weddle-Rule', unit: 'Unit 3' },
-  { title: 'Numerical Differentiation', path: '/Numerical Differentiation', unit: 'Unit 3' },
+  { title: 'Numerical Differentiation', path: '/numerical-differentiation', unit: 'Unit 3' },
 
   // Unit 4
   { title: 'Taylor\'s Series Method', path: '/taylor-s-series-method', unit: 'Unit 4' },

@@ -1,121 +1,114 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import "../styles/sidebar.css";
 import Image from 'next/image';
+
+const PAGES = [
+  { title: 'Home', src: "/home.svg", route: "/" },
+  { title: 'Setting', src: "/tune.svg", route: "/Setting" },
+  { title: 'Notes', src: "/notes.svg", route: "/Notes" },
+  { title: 'Profile', src: "/profile.svg", route: "/Profile" },
+  { title: 'Playground', src: "/game.svg", route: "/Playground" }
+];
+
+const UNITS = [
+  {
+    title: 'Unit 1',
+    subTopics: [
+      { title: 'Bisection Method', link: '/bisection-method' },
+      { title: 'Iteration Method', link: '/iteration-method' },
+      { title: 'False Position Method', link: '/false-position-method' },
+      { title: 'Newton-Raphson Method', link: '/newton-raphson-method' },
+      { title: 'Gauss Seidel Method', link: '/Gauss-seidal' },
+    ],
+  },
+  {
+    title: 'Unit 2',
+    subTopics: [
+      {
+        title: 'Interpolation for Equal Intervals',
+        subTopics: [
+          { title: "Newton's Forward Formula", link: '/newton-forward' },
+          { title: "Newton's Backward Formula", link: '/newton-backward' },
+          { title: 'Gauss Forward Formula', link: '/gauss-forward' },
+          { title: 'Gauss Backward Formula', link: '/gauss-backward' },
+        ],
+      },
+      {
+        title: 'Interpolation for Unequal Intervals',
+        subTopics: [
+          { title: "Newton's Divided Difference Formula", link: '/newton-divided' },
+          { title: "Lagrange's Interpolation Formula", link: '/lagrange-interpolation' },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Unit 3',
+    subTopics: [
+      { title: 'Numerical Differentiation', link: '/numerical-differentiation' },
+      {
+        title: 'Numerical Integration',
+        subTopics: [
+          { title: 'Trapezoidal Rule', link: '/trapezoidal-Rule' },
+          { title: "Simpson's 1/3 Rule", link: '/simpson-1-3-Rule' },
+          { title: "Simpson's 3/8 Rule", link: '/simpson-3-8-Rule' },
+          { title: "Boole's Rule", link: '/boole-Rule' },
+          { title: "Weddle's Rule", link: '/weddle-Rule' },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Unit 4',
+    subTopics: [
+      { title: "Taylor's Series Method", link: '/taylor-s-series-method' },
+      { title: "Euler's Method", link: '/euler-s-method' },
+      { title: "Modified Euler's Method", link: '/modified-euler-s-method' },
+      { title: "Runge-Kutta Methods", link: '/runge-kutta-method' },
+    ],
+  },
+  {
+    title: 'Unit 5',
+    subTopics: [
+      { title: 'Method of Least Squares', link: '/least-squares' },
+      { title: 'Fitting of Straight Lines', link: '/fitting-straight-lines' },
+      { title: 'Fitting of Second Degree Parabola', link: '/fitting-parabola' },
+      {
+        title: 'Testing of Hypothesis',
+        subTopics: [
+          { title: 'Test of Significance', link: '/test-significance' },
+          { title: 't-test', link: '/t-test' },
+          { title: 'F-test', link: '/f-test' },
+          { title: 'Chi-Square Test', link: '/chi-square' },
+        ],
+      },
+    ],
+  },
+];
 
 const Sidebar = () => {
   const [isClosed, setIsClosed] = useState(true);
   const [activeSubMenu, setActiveSubMenu] = useState(null);
   const [activeUnit, setActiveUnit] = useState(null); 
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  
 
-
-
-  const toggleSidebar = () => {
-    setIsClosed(!isClosed);
+  const toggleSidebar = useCallback(() => {
+    setIsClosed(prev => !prev);
     setActiveUnit(null);
     setActiveSubMenu(null);
-    
-  };
+  }, []);
 
-  const toggleSubMenu = (index) => {
-    setActiveSubMenu(activeSubMenu === index ? null : index);
+  const toggleSubMenu = useCallback((index) => {
+    setActiveSubMenu(prev => (prev === index ? null : index));
     setActiveUnit(null); 
-  };
+  }, []);
 
-  const toggleUnitMenu = (unitIndex) => {
-    setActiveUnit(activeUnit === unitIndex ? null : unitIndex);
-
-  };
-
- 
-
-  const pages = [
-    { title: 'Home', src: "/home.svg", route: "/" },
-    { title: 'Setting', src: "/tune.svg", route: "/Setting" },
-    { title: 'Notes', src: "/notes.svg", route: "/Notes" },
-    { title: 'Profile', src: "/profile.svg", route: "/Profile" },
-    { title: 'Playground', src: "/game.svg", route: "/Playground" }
-  ];
-
-  const units = [
-    {
-      title: 'Unit 1',
-      subTopics: [
-        { title: 'Bisection Method', link: '/bisection-method' },
-        { title: 'Iteration Method', link: '/iteration-method' },
-        { title: 'False Position Method', link: '/false-position-method' },
-        { title: 'Newton-Raphson Method', link: '/newton-raphson-method' },
-        { title: 'Gauss Seidel Method', link: '/Gauss-seidal' },
-      ],
-    },
-    {
-      title: 'Unit 2',
-      subTopics: [
-        {
-          title: 'Interpolation for Equal Intervals',
-          subTopics: [
-            { title: "Newton's Forward Formula", link: '/newton-forward' },
-            { title: "Newton's Backward Formula", link: '/newton-backward' },
-            { title: 'Gauss Forward Formula', link: '/gauss-forward' },
-            { title: 'Gauss Backward Formula', link: '/gauss-backward' },
-          ],
-        },
-        {
-          title: 'Interpolation for Unequal Intervals',
-          subTopics: [
-            { title: "Newton's Divided Difference Formula", link: '/newton-divided' },
-            { title: "Lagrange's Interpolation Formula", link: '/lagrange-interpolation' },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Unit 3',
-      subTopics: [
-        { title: 'Numerical Differentiation', link: '/numerical-differentiation' },
-        {
-          title: 'Numerical Integration',
-          subTopics: [
-            { title: 'Trapezoidal Rule', link: '/trapezoidal-Rule' },
-            { title: "Simpson's 1/3 Rule", link: '/simpson-1-3-Rule' },
-            { title: "Simpson's 3/8 Rule", link: '/simpson-3-8-Rule' },
-            { title: "Boole's Rule", link: '/boole-Rule' },
-            { title: "Weddle's Rule", link: '/weddle-Rule' },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Unit 4',
-      subTopics: [
-        { title: "Taylor's Series Method", link: '/taylor-s-series-method' },
-        { title: "Euler's Method", link: '/euler-s-method' },
-        { title: "Modified Euler's Method", link: '/modified-euler-s-method' },
-        { title: "Runge-Kutta Methods", link: '/runge-kutta-method' },
-      ],
-    },
-    {
-      title: 'Unit 5',
-      subTopics: [
-        { title: 'Method of Least Squares', link: '/least-squares' },
-        { title: 'Fitting of Straight Lines', link: '/fitting-straight-lines' },
-        { title: 'Fitting of Second Degree Parabola', link: '/fitting-parabola' },
-        {
-          title: 'Testing of Hypothesis',
-          subTopics: [
-            { title: 'Test of Significance', link: '/test-significance' },
-            { title: 't-test', link: '/t-test' },
-            { title: 'F-test', link: '/f-test' },
-            { title: 'Chi-Square Test', link: '/chi-square' },
-          ],
-        },
-      ],
-    },
-  ];
+  const toggleUnitMenu = useCallback((unitIndex) => {
+    setActiveUnit(prev => (prev === unitIndex ? null : unitIndex));
+  }, []);
 
   return (
     <div className={`sidebar ${isClosed ? 'close' : ''}`}>
@@ -142,7 +135,7 @@ const Sidebar = () => {
 
           {activeSubMenu === 0 && (
             <ul className="sub-menu shadow-xl shadow-black">
-              {units.map((unit, index) => (
+              {UNITS.map((unit, index) => (
                 <li 
                   key={index} 
                   { ...( isClosed ? {
@@ -201,7 +194,7 @@ const Sidebar = () => {
             </ul>
           )}
         </li>
-        {pages.map((page, index) => (
+        {PAGES.map((page, index) => (
           <li
             key={index}
             onMouseEnter={() => setHoveredIndex(index)}
@@ -240,4 +233,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-

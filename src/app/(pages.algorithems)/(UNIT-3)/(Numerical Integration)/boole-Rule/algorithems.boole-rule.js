@@ -6,7 +6,7 @@ import 'katex/dist/katex.min.css';
 import TButton from '@/app/components/TButton';
 import ExportToPNG from '@/app/utils/ExportToPNG';
 import { parseUserFunction } from '@/app/utils/evaluateMath';
-import Plot from '../simpson-1-3-Rule/Plot';
+import Plot from '@/app/components/UnifiedPlot';
 
 const BooleRuleSolver = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);

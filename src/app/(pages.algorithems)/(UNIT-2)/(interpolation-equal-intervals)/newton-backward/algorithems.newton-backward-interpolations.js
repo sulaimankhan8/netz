@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { BlockMath, InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
-import Plot from "../Plot";
+import Plot from '@/app/components/UnifiedPlot';
 import TButton from "../../../../components/TButton";
 
 import ExportToPNG from "@/app/utils/ExportToPNG";

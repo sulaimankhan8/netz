@@ -5,7 +5,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import TButton from '@/app/components/TButton';
 import ExportToPNG from '@/app/utils/ExportToPNG';
-import Plot from './Plot';
+import Plot from '@/app/components/UnifiedPlot';
 
 const FittingParabolaSolver = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);

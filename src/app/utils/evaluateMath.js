@@ -2,16 +2,35 @@ import { create, all } from 'mathjs';
 
 const math = create(all, {});
 
+// In-memory AST compilation cache to avoid re-parsing math strings on every iteration
+const compileCache = new Map();
+
 /**
  * Sanitizes math expressions entered by users.
  * Replaces JS Math prefix and JS exponentiation `**` with mathjs `^`.
  */
-function sanitizeMathString(expr) {
+export function sanitizeMathString(expr) {
   if (!expr || typeof expr !== 'string') return '';
   return expr
     .replace(/Math\./g, '')
     .replace(/\*\*/g, '^')
     .trim();
+}
+
+/**
+ * Returns a compiled mathjs expression, retrieving from cache if available.
+ */
+function getCompiledExpression(sanitizedExpr) {
+  if (compileCache.has(sanitizedExpr)) {
+    return compileCache.get(sanitizedExpr);
+  }
+  const compiled = math.compile(sanitizedExpr);
+  if (compileCache.size > 500) {
+    const firstKey = compileCache.keys().next().value;
+    compileCache.delete(firstKey);
+  }
+  compileCache.set(sanitizedExpr, compiled);
+  return compiled;
 }
 
 /**
@@ -28,7 +47,7 @@ export function evaluateMath(expr, xVal) {
   }
 
   const sanitizedExpr = sanitizeMathString(expr);
-  const compiled = math.compile(sanitizedExpr);
+  const compiled = getCompiledExpression(sanitizedExpr);
   const scope = typeof xVal === 'object' ? xVal : { x: xVal };
   const result = compiled.evaluate(scope);
 
@@ -52,7 +71,7 @@ export function parseUserFunction(expr, vars = ['x']) {
   }
 
   const sanitized = sanitizeMathString(expr);
-  const compiled = math.compile(sanitized);
+  const compiled = getCompiledExpression(sanitized);
 
   return (...args) => {
     const scope = {};
@@ -65,6 +84,22 @@ export function parseUserFunction(expr, vars = ['x']) {
     }
     return val;
   };
+}
+
+/**
+ * Computes the symbolic derivative of a function string with respect to a variable.
+ * Uses MathJS derivative engine.
+ * 
+ * @param {string} expr - Mathematical expression (e.g. "x^3 - 4*x - 9")
+ * @param {string} [variable='x'] - Variable to differentiate with respect to
+ * @returns {string} Derivative string expression
+ */
+export function getSymbolicDerivative(expr, variable = 'x') {
+  if (!expr || typeof expr !== 'string') return '';
+  const sanitized = sanitizeMathString(expr);
+  const node = math.parse(sanitized);
+  const derivedNode = math.derivative(node, variable);
+  return derivedNode.toString();
 }
 
 export default evaluateMath;

@@ -4,7 +4,7 @@ import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
 import React, { useState } from 'react';
 import TButton from '../../../components/TButton';
-import Plot from '../bisection-method/Plot';
+import Plot from '@/app/components/UnifiedPlot';
 import ExportToPNG from "@/app/utils/ExportToPNG";
 import { parseUserFunction } from "@/app/utils/evaluateMath";
 

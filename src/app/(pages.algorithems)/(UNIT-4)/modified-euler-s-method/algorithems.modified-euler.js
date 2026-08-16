@@ -6,7 +6,7 @@ import 'katex/dist/katex.min.css';
 import TButton from '@/app/components/TButton';
 import ExportToPNG from '@/app/utils/ExportToPNG';
 import { parseUserFunction } from '@/app/utils/evaluateMath';
-import Plot from '../euler-s-method/Plot';
+import Plot from '@/app/components/UnifiedPlot';
 
 const ModifiedEulerSolver = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
