@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Sidenav from './Sidenav';
 import NavBar from './NavBar';
 
 const Layout = ({ children }) => {
+  const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
   const [isClosed, setIsClosed] = useState(false); // Manage sidebar toggle
 
@@ -18,6 +20,13 @@ const Layout = ({ children }) => {
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Disable old navigation if user is on the new editorial example pages
+  const isExamplePage = pathname?.includes('/algorithm/example') || pathname?.startsWith('/example');
+
+  if (isExamplePage) {
+    return children ? <>{children}</> : null;
+  }
 
   return (
     <div className={`${!isMobile ? 'flex-col' : 'flex-row '}`}>
