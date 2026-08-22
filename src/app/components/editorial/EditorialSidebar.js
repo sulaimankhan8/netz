@@ -15,25 +15,19 @@ import {
   FiLayers, 
   FiExternalLink, 
   FiZap,
-  FiActivity,
   FiFolder,
   FiCornerDownRight,
   FiX
 } from 'react-icons/fi';
 
-// Unified Navigation Schema
+// Unified Navigation Schema (Badges removed as requested)
 const PRIMARY_NAV = [
   { title: 'Home', route: '/', icon: FiHome },
   { title: 'Algorithms Hub', route: '/Algorithems', icon: FiGrid },
-  { title: 'Playground', route: '/Playground', icon: FiZap, badge: 'Interactive' },
+  { title: 'Playground', route: '/Playground', icon: FiZap },
   { title: 'Notes Studio', route: '/Notes', icon: FiFileText },
   { title: 'Settings', route: '/Setting', icon: FiSliders },
   { title: 'Profile', route: '/Profile', icon: FiUser },
-];
-
-const LAB_EXAMPLES = [
-  { title: 'Newton Forward Lab', route: '/algorithm/example/newton-forward', badge: 'New Lab' },
-  { title: 'Compound Interest', route: '/algorithm/example', badge: 'Featured' }
 ];
 
 // Full 3-Level Deep Units Structure (Matching Sidenav.js perfectly)
@@ -60,7 +54,7 @@ const UNITS_DATA = [
       {
         title: 'Interpolation for Equal Intervals',
         subTopics: [
-          { title: "Newton's Forward Formula", link: '/newton-forward', isLab: true },
+          { title: "Newton's Forward Formula", link: '/newton-forward' },
           { title: "Newton's Backward Formula", link: '/newton-backward' },
           { title: 'Gauss Forward Formula', link: '/gauss-forward' },
           { title: 'Gauss Backward Formula', link: '/gauss-backward' },
@@ -239,17 +233,6 @@ export default function EditorialSidebar({ className = '' }) {
       });
     });
 
-    LAB_EXAMPLES.forEach(lab => {
-      if (lab.title.toLowerCase().includes(query)) {
-        results.push({
-          title: lab.title,
-          link: lab.route,
-          unitTitle: 'Lab',
-          categoryTitle: 'Interactive'
-        });
-      }
-    });
-
     return results;
   }, [searchQuery]);
 
@@ -404,16 +387,11 @@ export default function EditorialSidebar({ className = '' }) {
                         <FiFolder className="w-4 h-4 text-amber-500" />
                         <span>Pages</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-normal px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                          5 Units
-                        </span>
-                        {isPagesMenuOpen ? (
-                          <FiChevronDown className="w-3.5 h-3.5 text-neutral-400" />
-                        ) : (
-                          <FiChevronRight className="w-3.5 h-3.5 text-neutral-400" />
-                        )}
-                      </div>
+                      {isPagesMenuOpen ? (
+                        <FiChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+                      ) : (
+                        <FiChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+                      )}
                     </button>
 
                     {/* Level 1: Units Accordion Dropdown List */}
@@ -493,11 +471,6 @@ export default function EditorialSidebar({ className = '' }) {
                                                     }`}
                                                   >
                                                     <span className="truncate">{leaf.title}</span>
-                                                    {leaf.isLab && (
-                                                      <span className="text-[8px] font-bold px-1 bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 rounded shrink-0">
-                                                        LAB
-                                                      </span>
-                                                    )}
                                                   </Link>
                                                 );
                                               })}
@@ -568,11 +541,8 @@ export default function EditorialSidebar({ className = '' }) {
                         {/* Bridge hitbox between rail and flyout */}
                         <div className="absolute -left-3 top-0 bottom-0 w-4 pointer-events-auto" />
 
-                        <div className="px-2.5 py-1.5 border-b border-neutral-300 dark:border-neutral-700 font-mono font-black text-xs text-neutral-900 dark:text-white flex justify-between items-center">
-                          <span className="uppercase tracking-wider">Pages</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold">
-                            5 Units
-                          </span>
+                        <div className="px-2.5 py-1.5 border-b border-neutral-300 dark:border-neutral-700 font-mono font-black text-xs text-neutral-900 dark:text-white uppercase tracking-wider">
+                          Pages
                         </div>
 
                         <div className="space-y-1 pt-1">
@@ -694,11 +664,6 @@ export default function EditorialSidebar({ className = '' }) {
                                 }`}
                               >
                                 <span className="truncate">{leaf.title}</span>
-                                {leaf.isLab && (
-                                  <span className="text-[8px] font-bold px-1 bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 rounded">
-                                    LAB
-                                  </span>
-                                )}
                               </Link>
                             );
                           })}
@@ -712,7 +677,9 @@ export default function EditorialSidebar({ className = '' }) {
               {/* ============================================================ */}
               {/* 2. PRIMARY DIRECTORY LINKS */}
               {/* ============================================================ */}
-              <div className="space-y-1 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+              <div className={`space-y-1 border-t border-neutral-200 dark:border-neutral-800 ${
+                isCollapsed ? 'mt-11 pt-3' : 'pt-3'
+              }`}>
                 {!isCollapsed && (
                   <div className="px-1 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-600">
                     Directory
@@ -724,87 +691,35 @@ export default function EditorialSidebar({ className = '' }) {
                   return (
                     <div
                       key={idx}
-                      className="relative"
+                      className="relative flex justify-center"
                       onMouseEnter={() => isCollapsed && setHoveredFlyoutItem(nav.title)}
                       onMouseLeave={() => isCollapsed && setHoveredFlyoutItem(null)}
                     >
                       <Link
                         href={nav.route}
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-mono font-medium transition-all ${
+                        className={`flex items-center transition-all ${
                           active
                             ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-sm'
                             : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white'
-                        } ${isCollapsed ? 'justify-center px-0 py-2.5' : ''}`}
+                        } ${
+                          isCollapsed 
+                            ? 'w-11 h-11 justify-center rounded-xl' 
+                            : 'w-full gap-3 px-3 py-2 rounded-xl text-xs font-mono font-medium'
+                        }`}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-200'}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400'}`} />
                         
                         {!isCollapsed && (
-                          <div className="flex-1 flex items-center justify-between">
-                            <span>{nav.title}</span>
-                            {nav.badge && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.2 bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 rounded">
-                                {nav.badge}
-                              </span>
-                            )}
-                          </div>
+                          <span className="truncate">{nav.title}</span>
                         )}
                       </Link>
 
-                      {/* Rail Flyout Tooltip */}
+                      {/* Rail Flyout Tooltip — Centered vertically with exact arrow pointer */}
                       {isCollapsed && hoveredFlyoutItem === nav.title && (
-                        <div className="fixed left-[76px] z-50 bg-neutral-950 text-white text-xs font-mono font-bold px-3 py-1.5 rounded-lg shadow-xl whitespace-nowrap border border-neutral-700 animate-in fade-in duration-100">
-                          {nav.title}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* ============================================================ */}
-              {/* 3. INTERACTIVE LABS SHOWCASE */}
-              {/* ============================================================ */}
-              <div className="space-y-1 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-                {!isCollapsed && (
-                  <div className="px-1 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-600 flex items-center gap-1.5">
-                    <FiActivity className="w-3 h-3 text-emerald-500" /> Labs
-                  </div>
-                )}
-                {LAB_EXAMPLES.map((lab, idx) => {
-                  const active = pathname === lab.route;
-                  return (
-                    <div
-                      key={idx}
-                      className="relative"
-                      onMouseEnter={() => isCollapsed && setHoveredFlyoutItem(lab.title)}
-                      onMouseLeave={() => isCollapsed && setHoveredFlyoutItem(null)}
-                    >
-                      <Link
-                        href={lab.route}
-                        onClick={() => setMobileOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-mono font-medium transition-all ${
-                          active
-                            ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-neutral-950 font-bold shadow-sm'
-                            : 'text-neutral-700 dark:text-neutral-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-800 dark:hover:text-emerald-200'
-                        } ${isCollapsed ? 'justify-center px-0 py-2.5' : ''}`}
-                      >
-                        <FiZap className={`w-4 h-4 shrink-0 ${active ? 'text-white dark:text-neutral-950' : 'text-emerald-500'}`} />
-                        
-                        {!isCollapsed && (
-                          <div className="flex-1 flex items-center justify-between">
-                            <span className="truncate">{lab.title}</span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 rounded border border-emerald-200 dark:border-emerald-800">
-                              {lab.badge}
-                            </span>
-                          </div>
-                        )}
-                      </Link>
-
-                      {/* Rail Flyout Tooltip */}
-                      {isCollapsed && hoveredFlyoutItem === lab.title && (
-                        <div className="fixed left-[76px] z-50 bg-emerald-950 text-emerald-200 text-xs font-mono font-bold px-3 py-1.5 rounded-lg shadow-xl whitespace-nowrap border border-emerald-700 animate-in fade-in duration-100">
-                          {lab.title}
+                        <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 z-50 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-mono font-bold px-3 py-1.5 rounded-lg shadow-xl whitespace-nowrap border border-neutral-700 dark:border-neutral-300 pointer-events-none flex items-center animate-in fade-in zoom-in-95 duration-100">
+                          <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-neutral-900 dark:bg-neutral-100 rotate-45 border-l border-b border-neutral-700 dark:border-neutral-300" />
+                          <span className="relative z-10">{nav.title}</span>
                         </div>
                       )}
                     </div>

@@ -139,15 +139,6 @@ export default function NoteEditor({
       {/* Top Header */}
       <div className="h-14 px-4 md:px-6 border-b border-neutral-200 dark:border-[#2d2d2d] bg-white dark:bg-[#191919] flex items-center justify-between shrink-0 gap-3 z-10">
         <div className="flex items-center space-x-3 text-xs text-neutral-600 dark:text-neutral-300 min-w-0">
-          {!isSidebarOpen && (
-            <button
-              onClick={onToggleSidebar}
-              className="p-2 rounded-lg bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 dark:bg-[#2b2b2b] dark:hover:bg-[#333333] dark:border-[#383838] text-neutral-700 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white transition-colors shrink-0"
-              title="Expand Sidebar (>>)"
-            >
-              <FaAngleDoubleRight className="w-4 h-4 text-neutral-800 dark:text-white" />
-            </button>
-          )}
 
           <span className="flex items-center space-x-1.5 bg-neutral-100 dark:bg-[#242424] px-3 py-1 rounded-lg border border-neutral-200 dark:border-[#333333] text-xs font-semibold">
             {note.isPublic ? (
