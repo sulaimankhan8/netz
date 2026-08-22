@@ -20,6 +20,7 @@ import { startAudioRecording, stopAudioRecording } from '../utils/audioRecorder'
 import { clusterStrokes } from '../utils/spatialClusterer';
 import { processClusterOCR } from '../utils/handwritingOCR';
 import { preloadOCREngine } from '../utils/localOCRService';
+import { initAutocompleteTrie } from '../utils/autocompleteTrie';
 import { generateGraphDatasetFromLatex } from '../utils/equationToGraph';
 import { exportCanvasToPng, exportCanvasToSvg, exportCanvasToPdf } from '../utils/exportEngine';
 import {
@@ -90,6 +91,9 @@ export default function PlaygroundCanvasContainer() {
     // Pre-warm the Tesseract WASM OCR engine in background
     // Downloads ~3MB model on first visit (browser-cached after that)
     preloadOCREngine();
+
+    // Pre-warm English word Trie with 7-day IndexedDB cache in background
+    initAutocompleteTrie();
   }, []);
 
   // Save Session to IndexedDB when blocks or links change

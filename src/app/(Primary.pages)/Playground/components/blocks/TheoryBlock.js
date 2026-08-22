@@ -4,12 +4,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import 'katex/dist/katex.min.css';
 import { InlineMath } from 'react-katex';
 import { FiEdit2, FiCheck, FiList, FiCheckSquare, FiBold, FiItalic } from 'react-icons/fi';
+import { getGhostSuggestion, initAutocompleteTrie, recordRecentWord } from '../../utils/autocompleteTrie';
 
 /**
  * TheoryBlock — Rich Text Notes Block
  *
  * Upgraded from single-line input to a professional multi-line text editor with:
  * - Multi-line textarea that auto-resizes to content
+ * - English word ghost-text autocomplete with [Tab] pill hint (backed by Trie + 7-day IndexedDB cache)
  * - Bullet lists (lines starting with "- " or "• ")
  * - Checkboxes (lines starting with "[ ] " or "[x] ")
  * - Inline KaTeX math rendering ($...$)
@@ -20,7 +22,13 @@ export default function TheoryBlock({ block, onUpdateContent }) {
   const [text, setText] = useState(block.content?.text || '');
   // Auto-focus edit mode if minimal converted note block or text is empty
   const [isEditing, setIsEditing] = useState(() => Boolean(block.isMinimal) || !block.content?.text);
+  const [suggestion, setSuggestion] = useState(null);
   const textareaRef = useRef(null);
+
+  // Initialize Trie in background on mount
+  useEffect(() => {
+    initAutocompleteTrie();
+  }, []);
 
   useEffect(() => {
     if (block.content?.text !== undefined) {
@@ -42,9 +50,21 @@ export default function TheoryBlock({ block, onUpdateContent }) {
     }
   }, [isEditing, text, autoResize]);
 
-  const handleChange = (newVal) => {
+  const updateSuggestion = useCallback((currentText, cursorIndex) => {
+    if (typeof cursorIndex !== 'number') {
+      const el = textareaRef.current;
+      cursorIndex = el ? el.selectionStart : 0;
+    }
+    const sug = getGhostSuggestion(currentText !== undefined ? currentText : text, cursorIndex);
+    setSuggestion(sug);
+  }, [text]);
+
+  const handleChange = (newVal, cursorIndex = null) => {
     setText(newVal);
     onUpdateContent(block.blockId, { text: newVal });
+    if (cursorIndex !== null) {
+      updateSuggestion(newVal, cursorIndex);
+    }
   };
 
   /**
@@ -81,12 +101,67 @@ export default function TheoryBlock({ block, onUpdateContent }) {
   };
 
   /**
+   * Accepts the active ghost suggestion.
+   */
+  const acceptSuggestion = () => {
+    if (!suggestion || !textareaRef.current) return false;
+    const el = textareaRef.current;
+    const { endPos, suffix } = suggestion;
+
+    const newText = text.substring(0, endPos) + suffix + text.substring(endPos);
+    const newCursorPos = endPos + suffix.length;
+
+    // Record accepted word to 5,000 Recent Words LRU cache
+    if (suggestion.fullWord) {
+      recordRecentWord(suggestion.fullWord);
+    }
+
+    handleChange(newText);
+    setSuggestion(null);
+
+    requestAnimationFrame(() => {
+      if (el) {
+        el.selectionStart = el.selectionEnd = newCursorPos;
+      }
+    });
+    return true;
+  };
+
+  /**
    * Handles special keys in the textarea:
+   * - Tab: accept ghost autocomplete suggestion or indent
+   * - ArrowRight: accept ghost autocomplete suggestion if cursor is at end
+   * - Escape: dismiss ghost suggestion
    * - Enter: auto-continue list/checkbox prefixes
-   * - Tab: indent
    */
   const handleKeyDown = (e) => {
+    // 1. Ghost Autocomplete Acceptance via Tab
+    if (e.key === 'Tab' && suggestion) {
+      e.preventDefault();
+      acceptSuggestion();
+      return;
+    }
+
+    // 2. Ghost Autocomplete Acceptance via ArrowRight at word end
+    if (e.key === 'ArrowRight' && suggestion) {
+      const el = textareaRef.current;
+      if (el && el.selectionStart === suggestion.endPos && el.selectionEnd === suggestion.endPos) {
+        e.preventDefault();
+        acceptSuggestion();
+        return;
+      }
+    }
+
+    // 3. Dismiss suggestion via Escape
+    if (e.key === 'Escape' && suggestion) {
+      e.preventDefault();
+      setSuggestion(null);
+      return;
+    }
+
+    // 4. Enter key: continue lists and checkboxes
     if (e.key === 'Enter') {
+      setSuggestion(null);
       const el = textareaRef.current;
       if (!el) return;
 
@@ -280,21 +355,54 @@ export default function TheoryBlock({ block, onUpdateContent }) {
             </button>
           </div>
 
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => {
-              handleChange(e.target.value);
-            }}
-            onKeyDown={handleKeyDown}
-            onBlur={() => {
-              if (text.trim()) setIsEditing(false);
-            }}
-            autoFocus
-            placeholder="Start typing notes... (use - for bullets, [ ] for checkboxes, $...$ for math)"
-            className="w-full px-2.5 py-2 rounded-lg bg-white dark:bg-zinc-950 border-2 border-blue-500 text-sm font-sans font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none shadow-inner resize-none overflow-hidden leading-relaxed"
-            style={{ minHeight: '60px' }}
-          />
+          <div className="relative w-full rounded-lg bg-white dark:bg-zinc-950 border-2 border-blue-500 shadow-inner overflow-hidden">
+            {/* Ghost Autocomplete Overlay Layer */}
+            {suggestion && (
+              <div
+                className="absolute inset-0 px-2.5 py-2 text-sm font-sans font-medium text-transparent pointer-events-none select-none overflow-hidden whitespace-pre-wrap break-words leading-relaxed"
+                aria-hidden="true"
+              >
+                <span>{text.substring(0, suggestion.endPos)}</span>
+                <span className="text-zinc-400 dark:text-zinc-500 font-normal">
+                  {suggestion.suffix}
+                  <span className="inline-flex items-center ml-1 px-1 py-0 text-[9px] font-sans font-semibold rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-400 select-none shadow-xs align-middle">
+                    Tab
+                  </span>
+                </span>
+                <span>{text.substring(suggestion.endPos)}</span>
+              </div>
+            )}
+
+            {/* Editable Textarea */}
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => {
+                handleChange(e.target.value, e.target.selectionStart);
+              }}
+              onClick={(e) => {
+                updateSuggestion(text, e.target.selectionStart);
+              }}
+              onKeyUp={(e) => {
+                updateSuggestion(text, e.target.selectionStart);
+              }}
+              onKeyDown={handleKeyDown}
+              onBlur={() => {
+                setSuggestion(null);
+                if (text.trim()) {
+                  const words = text.match(/[a-zA-Z]{3,}/g) || [];
+                  for (let i = 0; i < words.length; i++) {
+                    recordRecentWord(words[i]);
+                  }
+                  setIsEditing(false);
+                }
+              }}
+              autoFocus
+              placeholder="Start typing notes... (use - for bullets, [ ] for checkboxes, $...$ for math)"
+              className="relative z-10 w-full px-2.5 py-2 bg-transparent text-sm font-sans font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none resize-none overflow-hidden leading-relaxed whitespace-pre-wrap break-words"
+              style={{ minHeight: '60px' }}
+            />
+          </div>
           <div className="flex items-center justify-between text-[10px] text-zinc-400">
             <span>
               Markdown: <code className="text-zinc-500">- list</code> · <code className="text-zinc-500">[ ] task</code> · <code className="text-zinc-500">$math$</code> · <code className="text-zinc-500">**bold**</code>
