@@ -1,43 +1,33 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import Sidenav from './Sidenav';
+import EditorialSidebar from './editorial/EditorialSidebar';
 import NavBar from './NavBar';
 
 const Layout = ({ children }) => {
-  const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
-  const [isClosed, setIsClosed] = useState(false); // Manage sidebar toggle
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768); // Adjust based on your breakpoint
+      setIsMobile(window.innerWidth <= 768);
     };
 
-    handleResize(); // Check on initial load
+    handleResize();
     window.addEventListener('resize', handleResize);
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Disable old navigation if user is on the new editorial example pages
-  const isExamplePage = pathname?.includes('/algorithm/example') || pathname?.startsWith('/example');
-
-  if (isExamplePage) {
-    return children ? <>{children}</> : null;
-  }
-
   return (
-    <div className={`${!isMobile ? 'flex-col' : 'flex-row '}`}>
-      {!isMobile && <Sidenav isClosed={isClosed} />} {/* Render sidebar only on larger screens */}
-      <div className={`content ${isMobile ? 'w-full' : ' ml-80'}`}>
-        {/* Apply margin based on the sidebar state */}
+    <div className="min-h-screen w-full relative flex">
+      {!isMobile && <EditorialSidebar />}
+      <div className="flex-1 w-full min-h-screen">
         {children}
       </div>
-      {isMobile && <NavBar />} {/* Render navbar only on mobile */}
+      {isMobile && <NavBar />}
     </div>
   );
 };
 
 export default Layout;
+

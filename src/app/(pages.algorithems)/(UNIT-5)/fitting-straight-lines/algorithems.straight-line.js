@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import TButton from '@/app/components/TButton';
-import ExportToPNG from '@/app/utils/ExportToPNG';
 import Plot from '@/app/components/UnifiedPlot';
+import { EditorialButton, EditorialExportButton } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiCheckCircle, FiTrendingUp, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const StraightLineSolver = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
@@ -16,6 +16,7 @@ const StraightLineSolver = () => {
   const [stepsData, setStepsData] = useState([]);
   const [gridLog, setGridLog] = useState([]);
   const [error, setError] = useState('');
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
 
   const calculateLinearFit = (xStr, yStr) => {
     setError('');
@@ -53,217 +54,307 @@ const StraightLineSolver = () => {
 
     const denom = n * sumX2 - sumX * sumX;
     if (Math.abs(denom) < 1e-12) {
-      setError('Cannot fit a straight line: vertical line or colinear x values.');
+      setError('System matrix is singular or degenerate (all x values might be identical).');
       return;
     }
 
     const a = (n * sumXY - sumX * sumY) / denom;
     const b = (sumY * sumX2 - sumX * sumXY) / denom;
 
-    setResult({
-      n,
-      sumX,
-      sumY,
-      sumX2,
-      sumXY,
-      denom,
-      a,
-      b
-    });
+    log.push(`Sum X = ${sumX.toFixed(4)}, Sum Y = ${sumY.toFixed(4)}`);
+    log.push(`Sum X^2 = ${sumX2.toFixed(4)}, Sum XY = ${sumXY.toFixed(4)}`);
+    log.push(`Slope a = ${a.toFixed(4)}, Intercept b = ${b.toFixed(4)}`);
+
     setGridLog(log);
     setStepsData(table);
+    setResult({ n, sumX, sumY, sumX2, sumXY, denom, a, b });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleCalculate = (e) => {
+    e?.preventDefault();
     calculateLinearFit(xValuesInput, yValuesInput);
   };
 
   const handleDemo = () => {
     setDemoInProgress(true);
-    setXValuesInput('0, 1, 2, 3, 4');
-    setYValuesInput('1, 1.8, 3.3, 4.5, 6.3');
-    calculateLinearFit('0, 1, 2, 3, 4', '1, 1.8, 3.3, 4.5, 6.3');
+    const demoX = '0, 1, 2, 3, 4';
+    const demoY = '1, 1.8, 3.3, 4.5, 6.3';
+    setXValuesInput(demoX);
+    setYValuesInput(demoY);
+    calculateLinearFit(demoX, demoY);
     setDemoInProgress(false);
   };
 
   const handleReset = () => {
-    setXValuesInput('');
-    setYValuesInput('');
+    setXValuesInput('0, 1, 2, 3, 4');
+    setYValuesInput('1, 1.8, 3.3, 4.5, 6.3');
     setResult(null);
     setStepsData([]);
     setGridLog([]);
     setError('');
   };
 
+  const exportData = stepsData.map((row) => ({
+    Index: row.index,
+    x: row.x.toFixed(4),
+    y: row.y.toFixed(4),
+    'x^2': row.x2.toFixed(4),
+    'x*y': row.xy.toFixed(4),
+  }));
+
+  if (result) {
+    exportData.push({
+      Index: 'Sum',
+      x: result.sumX.toFixed(4),
+      y: result.sumY.toFixed(4),
+      'x^2': result.sumX2.toFixed(4),
+      'x*y': result.sumXY.toFixed(4),
+    });
+  }
+
   return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Fitting a Straight Line (Linear Regression)</h1>
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? 'opacity-50 cursor-not-allowed' : ''} hover:bg-purple-600`}
-          color="violet"
-          altText="Demo"
-        />
-      </div>
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="w-full space-y-6">
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
           <div>
-            <label htmlFor="xVals" className="block text-sm font-semibold mb-1">
-              x Values (comma-separated):
-            </label>
-            <input
-              type="text"
-              id="xVals"
-              value={xValuesInput}
-              onChange={(e) => setXValuesInput(e.target.value)}
-              placeholder="e.g. 0, 1, 2, 3, 4"
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              CURVE FITTING LABORATORY
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Fitting Straight Lines (Linear Regression)
+            </h3>
           </div>
 
-          <div>
-            <label htmlFor="yVals" className="block text-sm font-semibold mb-1">
-              y Values (comma-separated):
-            </label>
-            <input
-              type="text"
-              id="yVals"
-              value={yValuesInput}
-              onChange={(e) => setYValuesInput(e.target.value)}
-              placeholder="e.g. 1, 1.8, 3.3, 4.5, 6.3"
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
           </div>
         </div>
 
-        <div className="flex justify-between items-center pt-2">
-          <button
-            type="submit"
-            id="Calculate"
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg shadow-md transition-colors"
-          >
-            Fit Line y = ax + b
-          </button>
-
-          <TButton
-            tooltipText="Reset"
-            onClick={handleReset}
-            imgSrc="/reset.svg"
-            altText="Reset"
-            color="red"
-            float="float-right"
-          />
-        </div>
-      </form>
-
-      {gridLog.length > 0 && (
-        <div className="my-6 p-4 bg-yellow-100 text-yellow-800 dark:bg-neutral-700 dark:text-yellow-200 rounded-xl space-y-1">
-          <strong>Linear Regression Initialization Log:</strong>
-          {gridLog.map((log, idx) => (
-            <p key={idx} className="font-mono text-sm">{log}</p>
-          ))}
-        </div>
-      )}
-
-      {result && (
-        <div className="my-4 p-4 bg-green-100 text-green-800 dark:bg-neutral-700 dark:text-green-200 rounded-xl font-bold text-lg">
-          Fitted Line Equation: <InlineMath math={`y = ${result.a.toFixed(4)}x + ${result.b.toFixed(4)}`} />
-        </div>
-      )}
-
-      {stepsData.length > 0 && result && (
-        <div className="mt-6 p-6 dark:bg-neutral-700 rounded-2xl border border-gray-200 dark:border-neutral-600">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Linear Regression Fit Scatter Plot:</h2>
-            <ExportToPNG
-              elementId="graphCanvas"
-              fileName="linear_fit_plot.png"
-              tooltipText="Export Plot to PNG"
-              color="blue"
-            />
+        {error && (
+          <div className="p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
           </div>
-          <div id="graphCanvas">
-            <Plot dataPoints={stepsData} lineEquation={{ a: result.a, b: result.b }} title="Linear Regression Curve Fit" />
-          </div>
-        </div>
-      )}
+        )}
 
-      {stepsData.length > 0 && (
-        <div className="my-6 overflow-x-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Normal Equations Data Table:</h2>
-            <ExportToPNG
-              elementId="Table"
-              fileName="linear_fit_table.png"
-              tooltipText="Export Table to PNG"
-              color="blue"
-            />
-          </div>
-          <table id="Table" className="w-full table-auto border-collapse border dark:border-neutral-600 text-left text-sm">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-neutral-700">
-                <th className="border p-3">#</th>
-                <th className="border p-3">x</th>
-                <th className="border p-3">y</th>
-                <th className="border p-3">x^2</th>
-                <th className="border p-3">x * y</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stepsData.map((row) => (
-                <tr key={row.index} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50">
-                  <td className="border p-3 font-mono">{row.index}</td>
-                  <td className="border p-3 font-mono">{row.x.toFixed(4)}</td>
-                  <td className="border p-3 font-mono">{row.y.toFixed(4)}</td>
-                  <td className="border p-3 font-mono">{row.x2.toFixed(4)}</td>
-                  <td className="border p-3 font-mono">{row.xy.toFixed(4)}</td>
-                </tr>
-              ))}
-              <tr className="bg-blue-50 dark:bg-neutral-900 font-bold">
-                <td className="border p-3">Sum (\Sigma)</td>
-                <td className="border p-3 font-mono">{result.sumX.toFixed(4)}</td>
-                <td className="border p-3 font-mono">{result.sumY.toFixed(4)}</td>
-                <td className="border p-3 font-mono">{result.sumX2.toFixed(4)}</td>
-                <td className="border p-3 font-mono">{result.sumXY.toFixed(4)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+        <form onSubmit={handleCalculate} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="xValues" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                x Values (comma separated)
+              </label>
+              <input
+                type="text"
+                id="xValues"
+                value={xValuesInput}
+                onChange={(e) => setXValuesInput(e.target.value)}
+                placeholder="e.g. 0, 1, 2, 3, 4"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
 
-      {result && (
-        <div className="mt-6 p-6 dark:bg-neutral-700 rounded-2xl border border-gray-200 dark:border-neutral-600 space-y-4">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-semibold">Detailed KaTeX Normal Equations Substitution:</h2>
-            <ExportToPNG
-              elementId="steps"
-              fileName="linear_fit_steps.png"
-              tooltipText="Export Steps to PNG"
-              color="blue"
-            />
-          </div>
-          <div id="steps" className="space-y-4 font-mono">
-            <div className="p-4 bg-blue-50 dark:bg-neutral-900 rounded-xl border border-blue-300 dark:border-blue-700">
-              <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">Normal Equations System</h3>
-              <BlockMath math={`\\sum y = a \\sum x + n b \\implies ${result.sumY.toFixed(4)} = ${result.sumX.toFixed(4)} a + ${result.n} b`} />
-              <BlockMath math={`\\sum xy = a \\sum x^2 + b \\sum x \\implies ${result.sumXY.toFixed(4)} = ${result.sumX2.toFixed(4)} a + ${result.sumX.toFixed(4)} b`} />
-              <BlockMath math={`a = \\frac{n \\sum xy - \\sum x \\sum y}{n \\sum x^2 - (\\sum x)^2} = \\frac{${result.n}(${result.sumXY.toFixed(4)}) - (${result.sumX.toFixed(4)})(${result.sumY.toFixed(4)})}{${result.denom.toFixed(4)}} = ${result.a.toFixed(4)}`} />
-              <BlockMath math={`b = \\frac{\\sum y \\sum x^2 - \\sum x \\sum xy}{\\Delta} = \\frac{(${result.sumY.toFixed(4)})(${result.sumX2.toFixed(4)}) - (${result.sumX.toFixed(4)})(${result.sumXY.toFixed(4)})}{${result.denom.toFixed(4)}} = ${result.b.toFixed(4)}`} />
-              <BlockMath math={`y = ${result.a.toFixed(4)} x + ${result.b.toFixed(4)}`} />
+            <div className="space-y-1.5">
+              <label htmlFor="yValues" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                y Values (comma separated)
+              </label>
+              <input
+                type="text"
+                id="yValues"
+                value={yValuesInput}
+                onChange={(e) => setYValuesInput(e.target.value)}
+                placeholder="e.g. 1, 1.8, 3.3, 4.5, 6.3"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
             </div>
           </div>
+
+          <EditorialButton
+            type="submit"
+            variant="primary"
+            size="md"
+            className="w-full"
+          >
+            <FiCheckCircle className="w-4 h-4 mr-2" /> Fit Line Y = aX + b
+          </EditorialButton>
+        </form>
+
+        {result && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Fitted Line Equation Result
+              </span>
+              <span className="text-base md:text-lg font-mono font-black">
+                y = {result.a.toFixed(4)}x + {result.b.toFixed(4)}
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Linear Regression Report"
+              elementId="linear-fit-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
+        )}
+      </div>
+
+      {stepsData.length > 0 && (
+        <div id="linear-fit-results-container" className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Summation Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> Normal Equations Derivation
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('plot')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'plot'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiTrendingUp className="w-3.5 h-3.5" /> Regression Curve Plot
+              </button>
+            </div>
+
+            <EditorialExportButton
+              title="Linear Regression Report"
+              elementId="linear-fit-results-container"
+              exportData={exportData}
+              size="sm"
+            />
+          </div>
+
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Linear Normal Equations Data Table
+              </h4>
+
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">#</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">x</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">y</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">x^2</th>
+                      <th className="p-3">x &middot; y</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stepsData.map((row, idx) => (
+                      <tr
+                        key={row.index}
+                        className={
+                          idx % 2 === 0
+                            ? 'bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white'
+                            : 'bg-white dark:bg-neutral-900 text-black dark:text-white'
+                        }
+                      >
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{row.index}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{row.x.toFixed(4)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{row.y.toFixed(4)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700 font-mono">{row.x2.toFixed(4)}</td>
+                        <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{row.xy.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                    {result && (
+                      <tr className="bg-emerald-500 text-white font-bold">
+                        <td className="p-3 border-t border-r border-emerald-600">Sum (&Sigma;)</td>
+                        <td className="p-3 border-t border-r border-emerald-600">{result.sumX.toFixed(4)}</td>
+                        <td className="p-3 border-t border-r border-emerald-600">{result.sumY.toFixed(4)}</td>
+                        <td className="p-3 border-t border-r border-emerald-600">{result.sumX2.toFixed(4)}</td>
+                        <td className="p-3 border-t border-emerald-600">{result.sumXY.toFixed(4)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'steps') && result && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> Normal Equations System Substitution
+              </h4>
+
+              <div className="p-4 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-3 font-mono text-xs">
+                <div className="space-y-1">
+                  <span className="font-bold text-neutral-500 uppercase block">Normal Equations:</span>
+                  <BlockMath math={`\\sum y = a \\sum x + n b \\implies ${result.sumY.toFixed(4)} = ${result.sumX.toFixed(4)} a + ${result.n} b`} />
+                  <BlockMath math={`\\sum xy = a \\sum x^2 + b \\sum x \\implies ${result.sumXY.toFixed(4)} = ${result.sumX2.toFixed(4)} a + ${result.sumX.toFixed(4)} b`} />
+                  <BlockMath math={`a = \\frac{n \\sum xy - \\sum x \\sum y}{n \\sum x^2 - (\\sum x)^2} = \\frac{${result.n}(${result.sumXY.toFixed(4)}) - (${result.sumX.toFixed(4)})(${result.sumY.toFixed(4)})}{${result.denom.toFixed(4)}} = ${result.a.toFixed(4)}`} />
+                  <BlockMath math={`b = \\frac{\\sum y \\sum x^2 - \\sum x \\sum xy}{\\Delta} = \\frac{(${result.sumY.toFixed(4)})(${result.sumX2.toFixed(4)}) - (${result.sumX.toFixed(4)})(${result.sumXY.toFixed(4)})}{${result.denom.toFixed(4)}} = ${result.b.toFixed(4)}`} />
+                  <BlockMath math={`y = ${result.a.toFixed(4)} x + ${result.b.toFixed(4)}`} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'plot') && result && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Regression Line Scatter Plot
+              </h4>
+
+              <div id="graphCanvas" className="w-full">
+                <Plot dataPoints={stepsData} lineEquation={{ a: result.a, b: result.b }} title="Linear Regression Curve Fit" />
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

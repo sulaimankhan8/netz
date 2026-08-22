@@ -71,8 +71,9 @@ export default function RootLayout({ children }) {
         <meta name="google-adsense-account" content="ca-pub-3746721364737268"></meta>
         </head>
       <body>
-        <Laout />
-        {children}
+        <Laout>
+          {children}
+        </Laout>
         <Analytics />
         <SpeedInsights />
       </body>

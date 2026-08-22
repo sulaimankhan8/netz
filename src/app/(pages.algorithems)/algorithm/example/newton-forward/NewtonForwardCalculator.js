@@ -41,6 +41,7 @@ export default function NewtonForwardCalculator({ theme }) {
   const [vParam, setVParam] = useState(null);
   const [hStep, setHStep] = useState(null);
   
+  const [learningMode, setLearningMode] = useState('beginner');
   const [polynomialSteps, setPolynomialSteps] = useState({
     formulas: [],
     substituted: [],
@@ -584,13 +585,14 @@ Generated via Netz Algorithm Lab`;
           {/* SECTION 2: STEP-BY-STEP DERIVATION VIEWER */}
           <div className={viewFilter === 'all' || viewFilter === 'steps' ? 'block' : 'hidden'}>
             <EditorialStepViewer
-              title="Step 2: Newton-Gregory Polynomial Expansion & Term Evaluation"
+              title={learningMode === 'beginner' ? 'Step 2: Step-by-Step Calculation' : 'Step 2: Newton-Gregory Polynomial Expansion & Term Evaluation'}
               vSteps={vSteps}
               formulas={polynomialSteps.formulas}
               substituted={polynomialSteps.substituted}
               calculated={polynomialSteps.calculated}
               finalAnswer={polynomialSteps.final}
               id="newton-forward-steps-container"
+              learningMode={learningMode}
             />
           </div>
 

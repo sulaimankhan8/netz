@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import TButton from '@/app/components/TButton';
-import ExportToPNG from '@/app/utils/ExportToPNG';
 import { parseUserFunction } from '@/app/utils/evaluateMath';
+import { EditorialButton, EditorialExportButton } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiCheckCircle, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const NumericalDifferentiationSolver = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
@@ -17,6 +17,7 @@ const NumericalDifferentiationSolver = () => {
   const [stepsData, setStepsData] = useState([]);
   const [gridLog, setGridLog] = useState([]);
   const [error, setError] = useState('');
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps'
 
   const calculateDifferentiation = (fExpr, xVal, hVal) => {
     setError('');
@@ -43,23 +44,18 @@ const NumericalDifferentiationSolver = () => {
     const fx0 = f(x0);
     const fx_plus_h = f(x0 + h);
     const fx_minus_h = f(x0 - h);
-    const fx_plus_2h = f(x0 + 2 * h);
-    const fx_minus_2h = f(x0 - 2 * h);
 
-    // First derivative central difference: (f(x+h) - f(x-h)) / (2h)
     const firstDerivCentral = (fx_plus_h - fx_minus_h) / (2 * h);
-
-    // Second derivative central difference: (f(x+h) - 2f(x) + f(x-h)) / (h^2)
     const secondDerivCentral = (fx_plus_h - 2 * fx0 + fx_minus_h) / (h * h);
 
-    const pointsTable = [
-      { label: 'f(x - 2h)', xVal: x0 - 2 * h, fVal: fx_minus_2h },
+    const gridPoints = [
       { label: 'f(x - h)', xVal: x0 - h, fVal: fx_minus_h },
       { label: 'f(x)', xVal: x0, fVal: fx0 },
       { label: 'f(x + h)', xVal: x0 + h, fVal: fx_plus_h },
-      { label: 'f(x + 2h)', xVal: x0 + 2 * h, fVal: fx_plus_2h },
     ];
 
+    setGridLog(log);
+    setStepsData(gridPoints);
     setResult({
       x0,
       h,
@@ -67,14 +63,12 @@ const NumericalDifferentiationSolver = () => {
       fx_plus_h,
       fx_minus_h,
       firstDerivCentral,
-      secondDerivCentral
+      secondDerivCentral,
     });
-    setGridLog(log);
-    setStepsData(pointsTable);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleCalculate = (e) => {
+    e?.preventDefault();
     calculateDifferentiation(functionInput, evalX, stepH);
   };
 
@@ -88,8 +82,8 @@ const NumericalDifferentiationSolver = () => {
   };
 
   const handleReset = () => {
-    setFunctionInput('');
-    setEvalX(0);
+    setFunctionInput('x^3 - 2*x + 5');
+    setEvalX(2);
     setStepH(0.01);
     setResult(null);
     setStepsData([]);
@@ -97,166 +91,240 @@ const NumericalDifferentiationSolver = () => {
     setError('');
   };
 
+  const exportData = stepsData.map((row) => ({
+    Symbol: row.label,
+    'Grid Point x': row.xVal.toFixed(6),
+    'f(x) Value': row.fVal.toFixed(6),
+  }));
+
   return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Numerical Differentiation Solver</h1>
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? 'opacity-50 cursor-not-allowed' : ''} hover:bg-purple-600`}
-          color="violet"
-          altText="Demo"
-        />
+    <div className="w-full space-y-6">
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
+          <div>
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              FINITE DIFFERENCE DERIVATIVE LABORATORY
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Numerical Differentiation Engine
+            </h3>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
+          </div>
+        </div>
+
+        {error && (
+          <div className="p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleCalculate} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="function" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Function Expression <InlineMath math="f(x)" />
+              </label>
+              <input
+                type="text"
+                id="function"
+                value={functionInput}
+                onChange={(e) => setFunctionInput(e.target.value)}
+                placeholder="e.g., x^3 - 2*x + 5"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="evalX" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Evaluation Point (<InlineMath math="x_0" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                id="evalX"
+                value={evalX}
+                onChange={(e) => setEvalX(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="stepH" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Step Size (<InlineMath math="h" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                id="stepH"
+                value={stepH}
+                onChange={(e) => setStepH(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+          </div>
+
+          <EditorialButton
+            type="submit"
+            variant="primary"
+            size="md"
+            className="w-full"
+          >
+            <FiCheckCircle className="w-4 h-4 mr-2" /> Compute Derivatives
+          </EditorialButton>
+        </form>
+
+        {result && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-5 border-2 border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 rounded-xl space-y-1 shadow-[2px_2px_0px_0px_rgba(37,99,235,0.3)]">
+              <span className="text-xs font-mono font-bold uppercase block text-blue-700 dark:text-blue-400">
+                1st Derivative f&apos;(x_0)
+              </span>
+              <span className="text-xl md:text-2xl font-mono font-black">
+                {result.firstDerivCentral.toFixed(6)}
+              </span>
+            </div>
+
+            <div className="p-5 border-2 border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 rounded-xl space-y-1 shadow-[2px_2px_0px_0px_rgba(147,51,234,0.3)]">
+              <span className="text-xs font-mono font-bold uppercase block text-purple-700 dark:text-purple-400">
+                2nd Derivative f&apos;&apos;(x_0)
+              </span>
+              <span className="text-xl md:text-2xl font-mono font-black">
+                {result.secondDerivCentral.toFixed(6)}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="function" className="block text-sm font-semibold mb-1">Enter Function <InlineMath math="f(x)" />:</label>
-          <input
-            type="text"
-            id="function"
-            value={functionInput}
-            onChange={(e) => setFunctionInput(e.target.value)}
-            placeholder="e.g. x^3 - 2*x + 5"
-            required
-            className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="evalX" className="block text-sm font-semibold mb-1">Evaluation Point <InlineMath math="x" />:</label>
-            <input
-              type="number"
-              id="evalX"
-              step="any"
-              value={evalX}
-              onChange={(e) => setEvalX(e.target.value)}
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="stepH" className="block text-sm font-semibold mb-1">Step Size <InlineMath math="h" />:</label>
-            <input
-              type="number"
-              id="stepH"
-              step="any"
-              value={stepH}
-              onChange={(e) => setStepH(e.target.value)}
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center pt-2">
-          <button
-            type="submit"
-            id="Calculate"
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg shadow-md transition-colors"
-          >
-            Calculate
-          </button>
-
-          <TButton
-            tooltipText="Reset"
-            onClick={handleReset}
-            imgSrc="/reset.svg"
-            altText="Reset"
-            color="red"
-            float="float-right"
-          />
-        </div>
-      </form>
-
-      {gridLog.length > 0 && (
-        <div className="my-6 p-4 bg-yellow-100 text-yellow-800 dark:bg-neutral-700 dark:text-yellow-200 rounded-xl space-y-1">
-          <strong>Grid Initialization Log:</strong>
-          {gridLog.map((log, idx) => (
-            <p key={idx} className="font-mono text-sm">{log}</p>
-          ))}
-        </div>
-      )}
-
-      {result && (
-        <div className="my-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-blue-50 dark:bg-neutral-900 rounded-xl border border-blue-200 dark:border-neutral-700 text-center">
-            <span className="text-xs uppercase font-bold text-gray-500">First Derivative f&apos;(x)</span>
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{result.firstDerivCentral.toFixed(6)}</p>
-          </div>
-
-          <div className="p-4 bg-purple-50 dark:bg-neutral-900 rounded-xl border border-purple-200 dark:border-neutral-700 text-center">
-            <span className="text-xs uppercase font-bold text-gray-500">Second Derivative f&apos;&apos;(x)</span>
-            <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{result.secondDerivCentral.toFixed(6)}</p>
-          </div>
-        </div>
-      )}
-
       {stepsData.length > 0 && (
-        <div className="my-6 overflow-x-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Grid Function Values:</h2>
-            <ExportToPNG
-              elementId="Table"
-              fileName="differentiation_table.png"
-              tooltipText="Export Table to PNG"
-              color="blue"
-            />
-          </div>
-          <table id="Table" className="w-full table-auto border-collapse border dark:border-neutral-600 text-left text-sm">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-neutral-700">
-                <th className="border p-3">Symbol</th>
-                <th className="border p-3">Grid Point x</th>
-                <th className="border p-3">f(x) Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stepsData.map((row, idx) => (
-                <tr key={idx} className={row.label === 'f(x)' ? 'bg-blue-50 dark:bg-neutral-900 font-bold' : ''}>
-                  <td className="border p-3 font-mono">{row.label}</td>
-                  <td className="border p-3 font-mono">{row.xVal.toFixed(6)}</td>
-                  <td className="border p-3 font-mono">{row.fVal.toFixed(6)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {result && (
-        <div className="mt-6 p-6 dark:bg-neutral-700 rounded-2xl border border-gray-200 dark:border-neutral-600 space-y-4">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-semibold">Detailed KaTeX Central Difference Formulas:</h2>
-            <ExportToPNG
-              elementId="steps"
-              fileName="differentiation_steps.png"
-              tooltipText="Export Steps to PNG"
-              color="blue"
-            />
-          </div>
-          <div id="steps" className="space-y-4 font-mono">
-            <div className="p-4 bg-blue-50 dark:bg-neutral-800 rounded-xl border border-blue-300 dark:border-blue-700">
-              <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">First Derivative Central Difference</h3>
-              <BlockMath math={`f'(x) \\approx \\frac{f(x+h) - f(x-h)}{2h}`} />
-              <BlockMath math={`f'(${result.x0}) \\approx \\frac{${result.fx_plus_h.toFixed(6)} - ${result.fx_minus_h.toFixed(6)}}{2 \\times ${result.h}} = ${result.firstDerivCentral.toFixed(6)}`} />
+        <div id="differentiation-results-container" className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Grid Values Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> Finite Difference Formulas
+              </button>
             </div>
 
-            <div className="p-4 bg-purple-50 dark:bg-neutral-800 rounded-xl border border-purple-300 dark:border-purple-700">
-              <h3 className="text-lg font-bold text-purple-800 dark:text-purple-300 mb-2">Second Derivative Central Difference</h3>
-              <BlockMath math={`f''(x) \\approx \\frac{f(x+h) - 2f(x) + f(x-h)}{h^2}`} />
-              <BlockMath math={`f''(${result.x0}) \\approx \\frac{${result.fx_plus_h.toFixed(6)} - 2(${result.fx0.toFixed(6)}) + ${result.fx_minus_h.toFixed(6)}}{${result.h}^2} = ${result.secondDerivCentral.toFixed(6)}`} />
-            </div>
+            <EditorialExportButton
+              title="Numerical Differentiation Report"
+              elementId="differentiation-results-container"
+              exportData={exportData}
+              size="sm"
+            />
           </div>
+
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Grid Function Evaluations
+              </h4>
+
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Symbol</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Grid Point x</th>
+                      <th className="p-3">f(x) Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stepsData.map((row, idx) => (
+                      <tr
+                        key={idx}
+                        className={
+                          row.label === 'f(x)'
+                            ? 'bg-emerald-500 text-white font-bold'
+                            : idx % 2 === 0
+                            ? 'bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white'
+                            : 'bg-white dark:bg-neutral-900 text-black dark:text-white'
+                        }
+                      >
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{row.label}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{row.xVal.toFixed(6)}</td>
+                        <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{row.fVal.toFixed(6)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'steps') && result && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> Central Difference Substitutions
+              </h4>
+
+              <div className="p-4 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-3 font-mono text-xs">
+                <div className="space-y-1">
+                  <span className="font-bold text-neutral-500 uppercase block">1st Derivative Formula:</span>
+                  <BlockMath math={`f'(x) \\approx \\frac{f(x+h) - f(x-h)}{2h}`} />
+                  <BlockMath math={`f'(${result.x0}) \\approx \\frac{${result.fx_plus_h.toFixed(6)} - ${result.fx_minus_h.toFixed(6)}}{2 \\times ${result.h}} = ${result.firstDerivCentral.toFixed(6)}`} />
+                </div>
+
+                <div className="space-y-1 pt-3 border-t border-neutral-200 dark:border-neutral-700">
+                  <span className="font-bold text-neutral-500 uppercase block">2nd Derivative Formula:</span>
+                  <BlockMath math={`f''(x) \\approx \\frac{f(x+h) - 2f(x) + f(x-h)}{h^2}`} />
+                  <BlockMath math={`f''(${result.x0}) \\approx \\frac{${result.fx_plus_h.toFixed(6)} - 2(${result.fx0.toFixed(6)}) + ${result.fx_minus_h.toFixed(6)}}{${result.h}^2} = ${result.secondDerivCentral.toFixed(6)}`} />
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

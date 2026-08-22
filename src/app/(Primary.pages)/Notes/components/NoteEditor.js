@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import NoteBlockItem from './NoteBlockItem';
 import { exportNoteAsMarkdown } from '../utils/noteStorage';
 import { 
@@ -13,8 +13,11 @@ import {
   FaCalculator,
   FaGlobe,
   FaLock,
-  FaBars,
-  FaTimes
+  FaTag,
+  FaClock,
+  FaFileAlt,
+  FaCheckCircle,
+  FaAngleDoubleRight
 } from 'react-icons/fa';
 
 export default function NoteEditor({
@@ -38,15 +41,26 @@ export default function NoteEditor({
     }
   }, [note]);
 
+  // Calculate word count & estimated reading time
+  const wordCount = useMemo(() => {
+    if (!note || !note.blocks) return 0;
+    return note.blocks.reduce((acc, b) => {
+      if (!b.content) return acc;
+      return acc + b.content.trim().split(/\s+/).filter(Boolean).length;
+    }, 0);
+  }, [note]);
+
+  const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
   if (!note) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500 bg-[#191919] font-sans">
-        <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4 text-indigo-400">
-          <FaSquareRootAlt className="w-8 h-8" />
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-[#191919] text-neutral-500 dark:text-neutral-400 font-sans transition-colors duration-200">
+        <div className="w-20 h-20 rounded-2xl bg-neutral-100 dark:bg-[#242424] border border-neutral-200 dark:border-[#333333] flex items-center justify-center mb-6 text-neutral-800 dark:text-white shadow-sm">
+          <FaSquareRootAlt className="w-10 h-10" />
         </div>
-        <h2 className="text-xl font-bold text-slate-300">No Active Note Selected</h2>
-        <p className="text-sm text-slate-400 mt-1 max-w-sm">
-          Select a note from the sidebar or click "Create New Note" to start writing interactive math formulas.
+        <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight">No Active Note Selected</h2>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 max-w-md leading-relaxed">
+          Select a note from the sidebar or click <span className="text-neutral-900 dark:text-white font-bold">"Create New Note"</span> to start writing interactive math formulas and algorithm solvers.
         </p>
       </div>
     );
@@ -121,49 +135,60 @@ export default function NoteEditor({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#191919] text-slate-100 font-sans overflow-hidden min-w-0">
-      {/* Top Action Toolbar */}
-      <div className="h-14 px-4 md:px-6 border-b border-[#2e2e2e] bg-[#181818] flex items-center justify-between shrink-0 gap-2">
-        <div className="flex items-center space-x-3 text-xs text-slate-400">
-          <button
-            onClick={onToggleSidebar}
-            className="p-1.5 rounded-xl bg-[#2e2e2e] hover:bg-[#383838] text-slate-200 transition-colors"
-            title={isSidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
-          >
-            {isSidebarOpen ? <FaTimes className="w-3.5 h-3.5" /> : <FaBars className="w-3.5 h-3.5" />}
-          </button>
+    <div className="flex-1 flex flex-col h-full bg-white dark:bg-[#191919] text-neutral-900 dark:text-neutral-100 font-sans overflow-hidden min-w-0 transition-colors duration-200">
+      {/* Top Header */}
+      <div className="h-14 px-4 md:px-6 border-b border-neutral-200 dark:border-[#2d2d2d] bg-white dark:bg-[#191919] flex items-center justify-between shrink-0 gap-3 z-10">
+        <div className="flex items-center space-x-3 text-xs text-neutral-600 dark:text-neutral-300 min-w-0">
+          {!isSidebarOpen && (
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 rounded-lg bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 dark:bg-[#2b2b2b] dark:hover:bg-[#333333] dark:border-[#383838] text-neutral-700 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white transition-colors shrink-0"
+              title="Expand Sidebar (>>)"
+            >
+              <FaAngleDoubleRight className="w-4 h-4 text-neutral-800 dark:text-white" />
+            </button>
+          )}
 
-          <span className="flex items-center space-x-1.5 bg-[#282828] px-2.5 py-1 rounded-lg border border-[#333333]">
+          <span className="flex items-center space-x-1.5 bg-neutral-100 dark:bg-[#242424] px-3 py-1 rounded-lg border border-neutral-200 dark:border-[#333333] text-xs font-semibold">
             {note.isPublic ? (
               <>
-                <FaGlobe className="w-3 h-3 text-emerald-400" />
-                <span className="text-emerald-300 font-medium">Public</span>
+                <FaGlobe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold">Public</span>
               </>
             ) : (
               <>
-                <FaLock className="w-3 h-3 text-slate-400" />
-                <span>Private</span>
+                <FaLock className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-400" />
+                <span className="text-neutral-700 dark:text-neutral-300 font-bold">Private</span>
               </>
             )}
           </span>
-          <span className="hidden sm:inline font-mono text-slate-500 text-[11px]">Key: {note.accessKey}</span>
+
+          <span className="hidden lg:flex items-center space-x-1 font-mono text-neutral-500 dark:text-neutral-400 text-xs bg-neutral-100 dark:bg-[#242424] px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#333333]">
+            <span>Key:</span>
+            <span className="text-neutral-900 dark:text-white font-bold">{note.accessKey}</span>
+          </span>
+
+          <span className="hidden sm:flex items-center space-x-1 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+            <FaCheckCircle className="w-3.5 h-3.5" />
+            <span>Saved</span>
+          </span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 shrink-0">
           <button
             onClick={onOpenShareModal}
-            className="flex items-center space-x-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
+            className="flex items-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-[#292929] dark:hover:bg-[#333333] text-neutral-900 dark:text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl border border-neutral-300 dark:border-[#383838] transition-all shadow-sm active:scale-95"
           >
-            <FaShareAlt className="w-3 h-3" />
-            <span className="hidden sm:inline">Share & Access Key</span>
+            <FaShareAlt className="w-3 h-3 text-neutral-500 dark:text-neutral-300" />
+            <span className="hidden sm:inline">Share & Access</span>
             <span className="sm:hidden">Share</span>
           </button>
 
           <button
             onClick={() => exportNoteAsMarkdown(note)}
-            className="flex items-center space-x-1.5 bg-[#2e2e2e] hover:bg-[#383838] text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all border border-[#333333]"
+            className="flex items-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-[#292929] dark:hover:bg-[#333333] text-neutral-900 dark:text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl border border-neutral-300 dark:border-[#383838] transition-all shadow-sm active:scale-95"
           >
-            <FaDownload className="w-3 h-3" />
+            <FaDownload className="w-3 h-3 text-neutral-500 dark:text-neutral-300" />
             <span className="hidden sm:inline">Export (.md)</span>
           </button>
         </div>
@@ -171,14 +196,14 @@ export default function NoteEditor({
 
       {/* Editor Main Scroll Area */}
       <div className="flex-1 overflow-y-auto custom-notion-scrollbar">
-        <div className="max-w-4xl w-full mx-auto pl-16 sm:pl-24 pr-6 sm:pr-12 py-8 space-y-6">
+        <div className="max-w-4xl w-full mx-auto px-4 sm:px-8 md:pl-16 md:pr-12 py-8 space-y-6">
           {/* Title, Subtitle, Tags Header */}
-          <div className="space-y-3 border-b border-[#2e2e2e] pb-6 w-full">
+          <div className="space-y-4 border-b border-neutral-200 dark:border-[#2d2d2d] pb-6 w-full">
             <input
               type="text"
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              className="w-full text-2xl sm:text-3xl md:text-4xl font-extrabold bg-transparent text-white focus:outline-none placeholder-slate-600"
+              className="w-full text-2xl sm:text-3xl md:text-4xl font-extrabold text-neutral-900 dark:text-white bg-transparent focus:outline-none placeholder-neutral-300 dark:placeholder-neutral-600 tracking-tight"
               placeholder="Untitled Note..."
             />
 
@@ -186,19 +211,34 @@ export default function NoteEditor({
               type="text"
               value={subtitle}
               onChange={(e) => handleSubtitleChange(e.target.value)}
-              className="w-full text-xs sm:text-sm font-medium bg-transparent text-indigo-300 focus:outline-none placeholder-slate-600"
+              className="w-full text-sm font-semibold text-neutral-600 dark:text-neutral-300 bg-transparent focus:outline-none placeholder-neutral-300 dark:placeholder-neutral-600"
               placeholder="Add brief description or topic subtitle..."
             />
 
-            <div className="flex items-center space-x-2 text-xs">
-              <span className="text-slate-500 font-mono shrink-0">Tags:</span>
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(e) => handleTagsChange(e.target.value)}
-                className="flex-1 bg-[#202020] border border-[#2e2e2e] rounded-xl px-3 py-1 text-xs text-purple-300 focus:outline-none focus:border-purple-500 font-mono"
-                placeholder="e.g. Calculus, Newton Raphson, Unit 1"
-              />
+            {/* Tags & Reading Statistics Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex items-center space-x-2 text-xs min-w-0 flex-1">
+                <FaTag className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(e) => handleTagsChange(e.target.value)}
+                  className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 placeholder-neutral-400 dark:bg-[#202020] dark:border-[#2e2e2e] dark:text-neutral-200 dark:placeholder-neutral-600 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-neutral-400 dark:focus:border-[#444444] font-mono transition-all font-medium"
+                  placeholder="e.g. Calculus, Newton Raphson, Unit 1"
+                />
+              </div>
+
+              <div className="flex items-center space-x-3 text-xs text-neutral-600 dark:text-neutral-300 font-mono bg-neutral-100 dark:bg-[#202020] px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-[#2e2e2e] font-semibold shrink-0">
+                <span className="flex items-center space-x-1">
+                  <FaFileAlt className="w-3 h-3 text-neutral-400" />
+                  <span>{wordCount} words</span>
+                </span>
+                <span className="text-neutral-300 dark:text-neutral-600">•</span>
+                <span className="flex items-center space-x-1">
+                  <FaClock className="w-3 h-3 text-neutral-400" />
+                  <span>{readingTimeMinutes} min read</span>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -220,56 +260,57 @@ export default function NoteEditor({
           </div>
 
           {/* Add Block Toolbar Footer */}
-          <div className="pt-6 border-t border-[#2e2e2e]">
-            <p className="text-xs text-slate-500 mb-3 font-semibold uppercase tracking-wider">
-              + Add Content Block (or type '/' in text)
+          <div className="pt-6 border-t border-neutral-200 dark:border-[#2d2d2d]">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3 font-extrabold uppercase tracking-wider flex items-center space-x-1.5">
+              <span>+ Add Content Block</span>
+              <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono font-normal">(or type '/' inside any text block)</span>
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
               <button
                 onClick={() => handleAddBlock('heading1')}
-                className="flex items-center space-x-2 p-2.5 rounded-xl bg-[#202020] hover:bg-[#282828] border border-[#2e2e2e] text-xs text-slate-300 transition-all hover:scale-105"
+                className="flex items-center space-x-2 p-2.5 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-800 dark:bg-[#222222] dark:hover:bg-[#2a2a2a] dark:border-[#333333] dark:text-neutral-200 text-xs font-bold transition-all"
               >
-                <FaHeading className="w-3.5 h-3.5 text-blue-400" />
+                <FaHeading className="w-3.5 h-3.5 text-blue-500" />
                 <span>H1 Heading</span>
               </button>
 
               <button
                 onClick={() => handleAddBlock('heading2')}
-                className="flex items-center space-x-2 p-2.5 rounded-xl bg-[#202020] hover:bg-[#282828] border border-[#2e2e2e] text-xs text-slate-300 transition-all hover:scale-105"
+                className="flex items-center space-x-2 p-2.5 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-800 dark:bg-[#222222] dark:hover:bg-[#2a2a2a] dark:border-[#333333] dark:text-neutral-200 text-xs font-bold transition-all"
               >
-                <FaHeading className="w-3 h-3 text-cyan-400" />
+                <FaHeading className="w-3 h-3 text-cyan-500" />
                 <span>H2 Subheading</span>
               </button>
 
               <button
                 onClick={() => handleAddBlock('paragraph')}
-                className="flex items-center space-x-2 p-2.5 rounded-xl bg-[#202020] hover:bg-[#282828] border border-[#2e2e2e] text-xs text-slate-300 transition-all hover:scale-105"
+                className="flex items-center space-x-2 p-2.5 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-800 dark:bg-[#222222] dark:hover:bg-[#2a2a2a] dark:border-[#333333] dark:text-neutral-200 text-xs font-bold transition-all"
               >
-                <FaParagraph className="w-3.5 h-3.5 text-slate-400" />
+                <FaParagraph className="w-3.5 h-3.5 text-neutral-500" />
                 <span>Paragraph</span>
               </button>
 
               <button
                 onClick={() => handleAddBlock('math')}
-                className="flex items-center space-x-2 p-2.5 rounded-xl bg-[#202020] hover:bg-[#282828] border border-[#2e2e2e] text-xs text-slate-300 transition-all hover:scale-105"
+                className="flex items-center space-x-2 p-2.5 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-800 dark:bg-[#222222] dark:hover:bg-[#2a2a2a] dark:border-[#333333] dark:text-neutral-200 text-xs font-bold transition-all"
               >
-                <FaSquareRootAlt className="w-3.5 h-3.5 text-purple-400" />
+                <FaSquareRootAlt className="w-3.5 h-3.5 text-purple-500" />
                 <span>LaTeX Math</span>
               </button>
 
               <button
                 onClick={() => handleAddBlock('callout')}
-                className="flex items-center space-x-2 p-2.5 rounded-xl bg-[#202020] hover:bg-[#282828] border border-[#2e2e2e] text-xs text-slate-300 transition-all hover:scale-105"
+                className="flex items-center space-x-2 p-2.5 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-800 dark:bg-[#222222] dark:hover:bg-[#2a2a2a] dark:border-[#333333] dark:text-neutral-200 text-xs font-bold transition-all"
               >
-                <FaLightbulb className="w-3.5 h-3.5 text-amber-400" />
+                <FaLightbulb className="w-3.5 h-3.5 text-amber-500" />
                 <span>Callout</span>
               </button>
 
               <button
                 onClick={() => handleAddBlock('widget')}
-                className="flex items-center space-x-2 p-2.5 rounded-xl bg-[#202020] hover:bg-[#282828] border border-indigo-500/50 text-xs text-indigo-300 font-semibold shadow-md transition-all hover:scale-105"
+                className="flex items-center space-x-2 p-2.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-neutral-900 dark:bg-[#292929] dark:hover:bg-[#333333] dark:border-[#404040] dark:text-white text-xs font-extrabold transition-all"
               >
-                <FaCalculator className="w-3.5 h-3.5 text-indigo-400" />
+                <FaCalculator className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                 <span>+ Math Widget</span>
               </button>
             </div>

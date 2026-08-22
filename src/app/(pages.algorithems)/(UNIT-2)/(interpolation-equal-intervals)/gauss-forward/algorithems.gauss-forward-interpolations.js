@@ -1,21 +1,30 @@
-"use client";
-import { useState } from "react";
+'use client';
+
+import React, { useState } from "react";
 import { BlockMath, InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
 import Plot from '@/app/components/UnifiedPlot';
-import TButton from "../../../../components/TButton";
-import ExportToPNG from "@/app/utils/ExportToPNG";
+import { EditorialButton, EditorialExportButton, EditorialStepViewer } from '@/app/components/editorial';
+import { FiPlus, FiTrash2, FiPlay, FiRotateCcw, FiCheckCircle, FiTrendingUp, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 export default function GaussForwardInterpolation({ theme }) {
   const [vSteps, setVSteps] = useState([]);
-  const [xRange, setXRange] = useState(Array.from({ length: 100 }, (_, i) => i));
+  const [xRange, setXRange] = useState([]);
   const [inline, setInline] = useState(false);
-  const [rows, setRows] = useState([{ x: "0", y: "0" }]);
-  const [interpolateX, setInterpolateX] = useState("");
+  const [rows, setRows] = useState([
+    { x: "2.5", y: "24.145" },
+    { x: "3.0", y: "22.043" },
+    { x: "3.5", y: "20.225" },
+    { x: "4.0", y: "18.644" },
+    { x: "4.5", y: "17.262" },
+    { x: "5.0", y: "16.047" }
+  ]);
+  const [interpolateX, setInterpolateX] = useState("3.75");
   const [output, setOutput] = useState("");
   const [diffTable, setDiffTable] = useState([]);
   const [mid, setMid] = useState(0);
-  const [interpolatedValue, setInterpolatedValue] = useState(0);
+  const [interpolatedValue, setInterpolatedValue] = useState(null);
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
   const [polynomialSteps, setPolynomialSteps] = useState({
     formulas: [],
     substituted: [],
@@ -24,25 +33,10 @@ export default function GaussForwardInterpolation({ theme }) {
   });
   const [demoInProgress, setDemoInProgress] = useState(false);
 
-  if (typeof window !== "undefined") {
-    let keysDown = {};
-    window.onkeydown = function(e) {
-      keysDown[e.key] = true;
-    
-      if (keysDown["Control"] &&  keysDown["c"]) {
-        //do what you want when control and a is pressed for example
-        handleAddRow();
-      }
-    }
-    
-    window.onkeyup = function(e) {
-      keysDown[e.key] = false;
-    }
-  }
   const handleAddRow = () => {
     setRows([...rows, { x: "", y: "" }]);
-
   };
+
   const handleInputChange = (index, field, value) => {
     const newRows = [...rows];
     newRows[index][field] = value;
@@ -53,15 +47,21 @@ export default function GaussForwardInterpolation({ theme }) {
     const newRows = rows.length > 1 ? rows.filter((_, i) => i !== index) : [{ x: "", y: "" }];
     setRows(newRows);
   };
-  const xValues = rows.map((row) => parseFloat(row.x));
-
 
   const handleReset = () => {
-    setRows([{ x: "", y: "" }]);
-    setInterpolateX("");
+    setRows([
+      { x: "2.5", y: "24.145" },
+      { x: "3.0", y: "22.043" },
+      { x: "3.5", y: "20.225" },
+      { x: "4.0", y: "18.644" },
+      { x: "4.5", y: "17.262" },
+      { x: "5.0", y: "16.047" }
+    ]);
+    setInterpolateX("3.75");
     setOutput("");
     setDiffTable([]);
     setVSteps([]);
+    setInterpolatedValue(null);
     setPolynomialSteps({
       formulas: [],
       substituted: [],
@@ -71,386 +71,432 @@ export default function GaussForwardInterpolation({ theme }) {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     const xValues = rows.map((row) => parseFloat(row.x));
     const yValues = rows.map((row) => parseFloat(row.y));
     const x = parseFloat(interpolateX);
 
-    if (xValues.length < 2 || yValues.length < 2) {
-      setOutput("Please enter at least two data points.");
+    if (xValues.length < 2 || yValues.length < 2 || isNaN(x)) {
+      setOutput("Please enter at least two valid data points and a target X value.");
       return;
     }
 
     const points = xValues.map((xi, i) => ({ x: xi, y: yValues[i] }));
-    const midp=midPoint(points,x);
+    const midp = midPoint(points, x);
     setMid(midp);
-    
-    
+
     const {
-      interpolatedValue,
-      diffTable,
+      interpolatedValue: interpVal,
+      diffTable: dTable,
       stepFormulas,
       stepSubstituted,
       stepCalculated,
-      vSteps,
-    } = gaussianFowardInterpolation(points, x ,midp);  
+      vSteps: stepsV,
+    } = gaussianFowardInterpolation(points, x, midp);
 
-    const minX = Math.min(...xValues) - 5;
-    const maxX = Math.max(...xValues) + 5;
+    const minX = Math.min(...xValues) - 1;
+    const maxX = Math.max(...xValues) + 1;
     setXRange(
       Array.from({ length: 100 }, (_, i) => minX + i * (maxX - minX) / 99)
     );
 
-    setVSteps(vSteps);
-    setDiffTable(diffTable);
+    setVSteps(stepsV);
+    setDiffTable(dTable);
     setPolynomialSteps({
       formulas: stepFormulas,
       substituted: stepSubstituted,
       calculated: stepCalculated,
-      final: `Interpolated value at x = ${x}: P(${x}) = ${interpolatedValue}`,
+      final: `Interpolated value at x = ${x}: P(${x}) = ${interpVal.toFixed(6)}`,
     });
-    setOutput(`Interpolated value at x = ${x}: P(${x}) = ${interpolatedValue}`);
-    setInterpolatedValue(interpolatedValue);
+    setOutput(`Interpolated value at x = ${x}: P(${x}) = ${interpVal.toFixed(6)}`);
+    setInterpolatedValue(interpVal);
   };
 
   const handleDemo = async () => {
-    const demoX = [2.5, 3,3.5, 4,4.5,5];
-    const demoY = [24.145, 22.043, 20.225, 18.644,17.262 ,16.047];
+    setDemoInProgress(true);
+    const demoX = [2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
+    const demoY = [24.145, 22.043, 20.225, 18.644, 17.262, 16.047];
     const demoInterpolateX = 3.75;
 
-    setDemoInProgress(true);
+    const newRows = demoX.map((val, idx) => ({ x: String(val), y: String(demoY[idx]) }));
+    setRows(newRows);
+    setInterpolateX(String(demoInterpolateX));
 
-    for (let i = 0; i < demoX.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    // Submit calculation
+    setTimeout(() => {
+      const points = demoX.map((xi, i) => ({ x: xi, y: demoY[i] }));
+      const midp = midPoint(points, demoInterpolateX);
+      setMid(midp);
 
-      setRows((prevRows) => {
-        const newRows = [...prevRows];
-        if (newRows[i]) {
-          newRows[i].x = demoX[i];
-          newRows[i].y = demoY[i];
-        } else {
-          newRows.push({ x: demoX[i], y: demoY[i] });
-        }
-        return newRows;
+      const {
+        interpolatedValue: interpVal,
+        diffTable: dTable,
+        stepFormulas,
+        stepSubstituted,
+        stepCalculated,
+        vSteps: stepsV,
+      } = gaussianFowardInterpolation(points, demoInterpolateX, midp);
+
+      const minX = Math.min(...demoX) - 1;
+      const maxX = Math.max(...demoX) + 1;
+      setXRange(
+        Array.from({ length: 100 }, (_, i) => minX + i * (maxX - minX) / 99)
+      );
+
+      setVSteps(stepsV);
+      setDiffTable(dTable);
+      setPolynomialSteps({
+        formulas: stepFormulas,
+        substituted: stepSubstituted,
+        calculated: stepCalculated,
+        final: `Interpolated value at x = ${demoInterpolateX}: P(${demoInterpolateX}) = ${interpVal.toFixed(6)}`,
       });
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setInterpolateX(demoInterpolateX);
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    document.getElementById("interpolateButton").click();
-
-    handleSubmit({ preventDefault: () => {} });
-    document.getElementById("interpolateButton").click();
-    setDemoInProgress(false);
+      setOutput(`Interpolated value at x = ${demoInterpolateX}: P(${demoInterpolateX}) = ${interpVal.toFixed(6)}`);
+      setInterpolatedValue(interpVal);
+      setDemoInProgress(false);
+    }, 300);
   };
 
+  // Convert difference table to JSON/CSV export format
+  const exportData = diffTable.map((row, rIdx) => {
+    const item = { x: rows[rIdx]?.x || '', p: (parseFloat(rows[rIdx]?.x) - mid).toFixed(4) };
+    row.forEach((val, cIdx) => {
+      item[`Δ^${cIdx}Y`] = val !== undefined ? val.toFixed(4) : '';
+    });
+    return item;
+  });
+
   return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 transition-all duration-300 dark:text-white">
-      <div className="flex justify-between items-center mb-6 text-slate-900 dark:text-white">
-        <h1 className="text-2xl font-bold">Gauss Forward Interpolation Calculator</h1>
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? "opacity-50 cursor-not-allowed" : ""} hover:bg-purple-400`}
-          color="violet"
-          altText={demoInProgress ? "Demo Running..." : "Demo"}
-        />
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-      <table className="w-[80%] m-auto table-auto md:ml-[15%] md:table-fixed   p-4 shadow-md ">
-          <thead>
-            <tr >
-              <th className="border border-gray-300 p-2">X Value</th>
-
-              <th className="border border-gray-300z p-2">Y Value</th>
-              <th className="w-[100px]"></th>
-            </tr>
-          </thead>
-          <tbody >
-            {rows.map((row, index) => (
-              <tr key={index} className="md:w-[80%]"> 
-                <td className="border border-gray-300 p-2 ">
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="x.xxxx"
-                    className="w-full p-2 text-black dark:bg-neutral-800 dark:text-white dark:border-gray-600  rounded-md hover:border hover:border-neutral-300"
-                    value={row.x != null ? row.x : 0}
-                    onChange={(e) =>
-                      handleInputChange(index, "x", e.target.value)
-                    }
-                    required
-                  />
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="y.yyyy"
-                    className="w-full p-2 text-black dark:bg-neutral-800 dark:text-white dark:border-gray-600  rounded-md hover:border hover:border-neutral-300"
-                    value={row.y != null ? row.y : 0}
-
-                    onChange={(e) =>
-                      handleInputChange(index, "y", e.target.value)
-                    }
-                    required
-                  />
-                </td>
-                <td className=" p-2  flex justify-center w-[80px]">
-
-                  <TButton
-                    imgSrc="/delete.svg"
-                    altText="Delete"
-                    onClick={() => handleDeleteRow(index)}
-                    tooltipText="Delete"
-                    color="red"
-                    className=" "
-
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <TButton
-          tooltipText="add&nbsp;row&nbsp;(Ctrl+C)"
-          onClick={handleAddRow}
-          imgSrc="/add-row-below.svg"
-          altText="add row"
-          color="blue"
-          className="text-lg"
-        />
-        <div className="space-y-2 shadow-lg border p-2 rounded-xl">
-          <label htmlFor="interpolateX" className="font-bold">Interpolate at X:</label>
-          <input
-            type="number"
-            step="any"
-            placeholder="0.00000"
-            id="interpolateX"
-            className="w-full p-2 text-black dark:bg-neutral-800 dark:text-white dark:border-gray-600 rounded-md hover:border hover:border-neutral-300 "
-            value={interpolateX}
-            onChange={(e) => setInterpolateX(e.target.value)}
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          id="interpolateButton"
-          className="focus:outline-none focus:ring-2 focus:ring-offset-2 active:bg-opacity-80 text-white px-4 py-2 rounded hover:bg-green-400 bg-green-500 active:bg-green-700 focus:ring-green-700 "
-        >
-          Interpolate
-        </button>
-
-        <TButton
-          tooltipText="Reset"
-          onClick={handleReset}
-          imgSrc="/reset.svg"
-          altText="Reset"
-          className="float-right "
-          color="red"
-          float="float-right"
-        />
-
-
-      </form> 
-      {output && (
-      <div className="mt-4 p-4 border rounded shadow-md bg-gray-100 dark:bg-neutral-800">
-        <h3 className="font-bold">Output:</h3>
-        <p>{output}</p>
-      </div>
-    )}
-      {xRange.length > 0 && (
-        <div className="mt-6 mx-auto dark:bg-neutral-600 p-8 rounded-2xl  hover:border hover:border-neutral-300 ">
-          <ExportToPNG 
-           elementId="graphCanvas"
-           fileName="graph.png"
-          tooltipText="Export&nbsp;Graph&nbsp;to&nbsp;PNG"
-          color="blue"
-          
-           altText="Export Graph" 
-         
-           float="float-right" />
-          <h2 className="text-xl font-semibold ">Plot:</h2>
-          <Plot   points={rows.map(row => ({ x: parseFloat(row.x), y: parseFloat(row.y) }))} 
-  xRange={xRange} 
-  darkTheme={theme} 
-  func={gaussianFowardInterpolation}
-  helpfunc={midPoint} />
-        </div>
-      )} 
-      
-  
-      
-      {diffTable.length > 0 && (<div>
-        <ExportToPNG 
-           elementId="diffTable"
-           fileName="table.png"
-          tooltipText="Export&nbsp;Table to&nbsp;PNG"
-          color="blue"
-           className="overflow-visible "
-           altText="Export Table" 
-          
-           float="float-right" />
-
-        <div id="diffTable" className="mt-6 ml-8  overflow-x-auto dark:bg-neutral-700">
-          <div></div><h2 className="text-xl inline-block font-semibold">Difference Table </h2>
-
-
-          <table className="w-full table-auto border-collapse border border-gray-300 mt-4">
-            <thead>
-              <tr>
-                <th className="border border-gray-300 p-2">x</th>
-                <th className="border border-gray-300 p-2">p</th>
-                {Array.from({ length: diffTable.length }).map((_, i) => (
-                  <th key={i} className="border border-gray-300 p-2">
-                    Δ<sup>{i}</sup>Y
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {diffTable.map((row, rowIndex) => (
-                <tr
-                  key={rowIndex}
-                  className={
-                    xValues[rowIndex]-mid ===  0 ? "bg-red-500" : ""
-                  }
-                >
-                  <td className="border border-gray-300 p-2">
-                    {xValues[rowIndex]}
-                  </td>
-                  <td className="border border-gray-300 p-2">
-                    {xValues[rowIndex]-mid}
-                  </td>
-
-                  {row.map((value, colIndex) => (
-  <td key={colIndex + 1} className="border border-gray-300 p-2">
-    {value !== undefined
-      ? rowIndex === 0 // Check if it's the first row
-        ? value.toFixed(4) !== "0.0000"
-          ? value.toFixed(4)
-          : "0" // Display 0 for the first row if the value is 0
-        : value.toFixed(4) !== "0.0000"
-        ? value.toFixed(4)
-        : ""
-      : ""}
-  </td>
-))}
-
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div></div>
-      )}
+    <div className="w-full space-y-6">
+      {/* Primary Calculator Container */}
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
         
-      <div id="steps" className="mt-6 text-wrap dark:bg-neutral-700">
-      
-      {vSteps.length > 0 && (
-        <div className="mt-6 overflow-visible">
-          <div className=" py-4"><h2 className="text-xl font-semibold inline-block ">p Calculation Steps</h2>
-           <div className="inline-block float-right  flex flex-row" >
-            <ExportToPNG 
-           elementId="steps"
-           fileName="steps.png"
-          tooltipText="Export&nbsp;Polynomial Steps&nbsp;to&nbsp;PNG" 
-          color="blue" 
-          altText="Export&nbsp;steps" 
-          className="inline " 
-          
-           float="float" />
-     
+        {/* Header Actions Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
+          <div>
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              CENTRAL DIFFERENCE INTERPOLATOR
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Gauss Forward Calculation Engine
+            </h3>
+          </div>
 
-</div></div>
-
-          <div className="mt-2 p-4 border border-gray-300 rounded-lg">
-
-            <pre className="overflow-x-auto">
-              <BlockMath math={vSteps.join(",")} />
-            </pre>
-
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Load Example Preset
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset Inputs
+            </EditorialButton>
           </div>
         </div>
-      )}
 
+        {/* Input Table Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Data Points (<InlineMath math="x_i, y_i" />)
+              </label>
+              <EditorialButton
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddRow}
+              >
+                <FiPlus className="w-3.5 h-3.5 mr-1" /> Add Point Row
+              </EditorialButton>
+            </div>
 
-
-      <div className="space-y-4 ">
-        {polynomialSteps.formulas.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold inline-block">Polynomial Steps</h2>
-            <TButton
-      onClick={() =>
-        setInline(prev => !prev)}
-
-         float="float-right"
-          className=" inline-block "
-          altText="Inline"
-            tooltipText="Inline&nbsp;or&nbsp;Block"
-          color="red"
-/>
-            <div className="mt-2 p-4 border border-gray-300 rounded-lg">
-              <div className="">
-                <h3 className="text-lg font-semibold p-5">Formulas:</h3>
-
-                {inline ? (
-                  <div className="overflow-x-auto break-words overflow-y-visible p-4">
-                    <InlineMath math={polynomialSteps.formulas.join(`+ \\displaystyle`)} />
-                  </div>
-
-                ) : (
-                  <pre className="overflow-x-auto break-words whitespace-normal">
-                    <BlockMath math={polynomialSteps.formulas.join("+")} />
-                  </pre>
-                )}
-              </div>
-              <div className="">
-                <h3 className="text-lg font-semibold p-5">Substituted Values:</h3>
-                {inline ? (
-                  <div className="break-words overflow-x-auto overflow-y-visible p-4 ">
-                    <InlineMath math={polynomialSteps.substituted.join(" + \\displaystyle")} />
-                  </div>
-                ) : (
-                  <pre className="break-words whitespace-normal overflow-x-auto p-4">
-                    <BlockMath math={polynomialSteps.substituted.join(" + ")} />
-                  </pre>
-                )}
-
-              </div>
-              <div className="" >
-                <h3 className="text-lg font-semibold p-5">Evaluated Terms:</h3>
-
-                {inline ? (
-
-                  <div className="break-words overflow-x-auto overflow-y-visible p-4">
-                    <InlineMath math={polynomialSteps.calculated.join(` \\displaystyle +`)} />
-                  </div>
-                ) : (
-                  <pre className="break-words whitespace-normal overflow-x-auto">
-                    <BlockMath math={polynomialSteps.calculated.join("+")} />
-                  </pre>
-                )}
-
-              </div>
-              <div className="overflow-x-auto p-4">
-                <h3 className="text-lg font-semibold p-5">Final Answer:</h3>
-                <p className="font-bold text-lg">{polynomialSteps.final}</p>
-
-                <br></br>
-              </div>
-
+            <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+              <table className="w-full text-sm font-mono text-left">
+                <thead>
+                  <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold text-xs">
+                    <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Point #</th>
+                    <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">X Value</th>
+                    <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Y Value = f(X)</th>
+                    <th className="p-3 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                  {rows.map((row, index) => (
+                    <tr key={index} className="bg-white dark:bg-neutral-900">
+                      <td className="p-3 font-bold text-neutral-500 border-r border-neutral-200 dark:border-neutral-800">
+                        P{index + 1}
+                      </td>
+                      <td className="p-2 border-r border-neutral-200 dark:border-neutral-800">
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="e.g. 2.5"
+                          className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-black dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                          value={row.x}
+                          onChange={(e) => handleInputChange(index, "x", e.target.value)}
+                          required
+                        />
+                      </td>
+                      <td className="p-2 border-r border-neutral-200 dark:border-neutral-800">
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="e.g. 24.145"
+                          className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-black dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                          value={row.y}
+                          onChange={(e) => handleInputChange(index, "y", e.target.value)}
+                          required
+                        />
+                      </td>
+                      <td className="p-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRow(index)}
+                          className="p-2 text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                          title="Delete Row"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end pt-2">
+            <div className="sm:col-span-2 space-y-1.5">
+              <label htmlFor="interpolateX" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Target Interpolation Point (<InlineMath math="x_{target}" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                placeholder="e.g. 3.75"
+                id="interpolateX"
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                value={interpolateX}
+                onChange={(e) => setInterpolateX(e.target.value)}
+                required
+              />
+            </div>
+
+            <EditorialButton
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-full"
+            >
+              <FiCheckCircle className="w-4 h-4 mr-2" /> Calculate Interpolation
+            </EditorialButton>
+          </div>
+        </form>
+
+        {/* Interpolated Output Banner */}
+        {interpolatedValue !== null && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Interpolated Result at x = {interpolateX}
+              </span>
+              <span className="text-xl md:text-2xl font-mono font-black">
+                P({interpolateX}) = {interpolatedValue.toFixed(6)}
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Gauss Forward Interpolation Report"
+              elementId="gauss-forward-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Results & Visualizer Tabbed Display */}
+      {diffTable.length > 0 && (
+        <div id="gauss-forward-results-container" className="space-y-6">
+          
+          {/* Sub-navigation Tabs */}
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Difference Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> Derivation Steps
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('plot')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'plot'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiTrendingUp className="w-3.5 h-3.5" /> Curve Plot
+              </button>
+            </div>
+
+            <EditorialExportButton
+              title="Gauss Forward Interpolation Report"
+              elementId="gauss-forward-results-container"
+              exportData={exportData}
+              size="sm"
+            />
+          </div>
+
+          {/* Central Difference Table View */}
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Gauss Forward Central Difference Table
+              </h4>
+
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">X</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">p</th>
+                      {Array.from({ length: diffTable.length }).map((_, i) => (
+                        <th key={i} className="p-3 border-r border-neutral-700 dark:border-neutral-300 last:border-r-0">
+                          Δ<sup>{i}</sup>Y
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {diffTable.map((row, rowIndex) => {
+                      const xVal = parseFloat(rows[rowIndex]?.x || 0);
+                      const isMidpointRow = xVal === mid;
+                      return (
+                        <tr
+                          key={rowIndex}
+                          className={
+                            isMidpointRow
+                              ? 'bg-amber-100 dark:bg-amber-950/60 font-bold text-amber-900 dark:text-amber-200'
+                              : rowIndex % 2 === 0
+                              ? 'bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white'
+                              : 'bg-white dark:bg-neutral-900 text-black dark:text-white'
+                          }
+                        >
+                          <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700 font-bold">{xVal}</td>
+                          <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{(xVal - mid).toFixed(2)}</td>
+                          {row.map((value, colIndex) => (
+                            <td key={colIndex} className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700 last:border-r-0">
+                              {value !== undefined ? value.toFixed(4) : ''}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Derivation Steps View */}
+          {(viewTab === 'all' || viewTab === 'steps') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Parameter & Polynomial Derivation
+              </h4>
+
+              {vSteps.length > 0 && (
+                <div className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
+                  <span className="text-xs font-mono font-bold uppercase text-neutral-500 block">Central Parameter (p) Calculation:</span>
+                  <div className="overflow-x-auto text-center py-2">
+                    <BlockMath math={vSteps.join(" \\quad, \\quad ")} />
+                  </div>
+                </div>
+              )}
+
+              {polynomialSteps.formulas.length > 0 && (
+                <div className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-4">
+                  <div>
+                    <span className="text-xs font-mono font-bold uppercase text-neutral-500 block mb-1">Substituted Gauss Forward Series:</span>
+                    <div className="overflow-x-auto text-center py-2">
+                      <BlockMath math={polynomialSteps.substituted.join(" + ")} />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-300 dark:border-neutral-700">
+                    <span className="text-xs font-mono font-bold uppercase text-neutral-500 block mb-1">Evaluated Term Sum:</span>
+                    <div className="overflow-x-auto text-center py-2 font-mono text-sm font-bold">
+                      {polynomialSteps.calculated.join(" + ")}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Curve Plot View */}
+          {(viewTab === 'all' || viewTab === 'plot') && xRange.length > 0 && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Interpolated Polynomial Curve
+              </h4>
+
+              <div id="graphCanvas" className="w-full">
+                <Plot
+                  points={rows.map(row => ({ x: parseFloat(row.x), y: parseFloat(row.y) }))}
+                  xRange={xRange}
+                  darkTheme={theme}
+                  func={gaussianFowardInterpolation}
+                  helpfunc={midPoint}
+                />
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
     </div>
   );
 }
+
 function gaussianFowardInterpolation(points, x ,mid) {
     const tr = [
         `y_0`,

@@ -3,20 +3,21 @@
 import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
 import React, { useState } from 'react';
-import TButton from '../../../components/TButton';
 import UnifiedPlot from '@/app/components/UnifiedPlot';
-import ExportToPNG from "@/app/utils/ExportToPNG";
 import { parseUserFunction } from "@/app/utils/evaluateMath";
+import { EditorialButton, EditorialExportButton, EditorialStepViewer } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiCheckCircle, FiTrendingUp, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const BisectionMethod = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
-  const [functionInput, setFunctionInput] = useState("x * x *x - 4*x -9"); // Default function
+  const [functionInput, setFunctionInput] = useState("x * x * x - 4 * x - 9"); // Default function
   const [tolerance, setTolerance] = useState(0.0001);
   const [result, setResult] = useState(null);
   const [intervalSteps, setIntervalSteps] = useState([]);
   const [bisectionIterations, setBisectionIterations] = useState([]);
   const [error, setError] = useState('');
   const [iterationsCount, setIterationsCount] = useState(0);
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
 
   // Handle input changes
   const handleFunctionChange = (e) => {
@@ -34,14 +35,14 @@ const BisectionMethod = () => {
 
   // Handle form submission
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setError('');
     setResult(null);
     setIntervalSteps([]);
     setBisectionIterations([]);
     setIterationsCount(0);
 
-    // Convert user input to a function safely using mathjs
+    // Convert user input to a function safely
     let f;
     try {
       f = parseUserFunction(functionInput);
@@ -91,17 +92,16 @@ const BisectionMethod = () => {
     if (fa === null) {
       steps.push(`Skipping positive direction due to evaluation error at x = ${a}`);
     } else if (fa === 0) {
-      steps.push(`Exact root found at x = ${a} `);
-      return { interval: [a-1, a+1], steps };
+      steps.push(`Exact root found at x = ${a}`);
+      return { interval: [a - 1, a + 1], steps };
     } else {
       for (let x = a + step; x <= maxRange; x += step) {
         const fx = evaluateFunction(x);
         if (fx === null) continue;
 
         if (fx === 0) {
-          steps.push(`Exact root found at x = ${x},\n
-             Sign change detected between x = ${x-1} and x = ${x+1}`);
-          return { interval: [x-1, x+1], steps };
+          steps.push(`Exact root found at x = ${x}, Sign change detected between x = ${x - 1} and x = ${x + 1}`);
+          return { interval: [x - 1, x + 1], steps };
         }
 
         if (fa * fx < 0) {
@@ -117,7 +117,7 @@ const BisectionMethod = () => {
     }
 
     steps.push(`No valid interval found in positive direction up to x = ${maxRange}. Searching in negative direction.`);
-    
+
     a = 0;
     fa = evaluateFunction(a);
     if (fa === null) {
@@ -188,18 +188,16 @@ const BisectionMethod = () => {
     };
   };
 
-  const handleDemo = async () => {
+  const handleDemo = () => {
     setDemoInProgress(true);
     setFunctionInput("x * x * x - 4 * x - 9");
     setTolerance(0.0001);
-
-    const syntheticEvent = { preventDefault: () => {} };
-    handleSubmit(syntheticEvent);
+    handleSubmit();
     setDemoInProgress(false);
   };
 
   const handleReset = () => {
-    setFunctionInput("x * x *x - 4*x -9");
+    setFunctionInput("x * x * x - 4 * x - 9");
     setTolerance(0.0001);
     setResult(null);
     setIntervalSteps([]);
@@ -208,173 +206,284 @@ const BisectionMethod = () => {
     setIterationsCount(0);
   };
 
-  return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:text-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 space-y-6">
-      <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
-        <h2 className="text-2xl font-bold">Bisection Method Solver</h2>
+  // Convert iterations to CSV for export
+  const exportData = bisectionIterations.map((iter) => ({
+    Iteration: iter.iteration,
+    a: iter.a.toFixed(6),
+    b: iter.b.toFixed(6),
+    'c (Midpoint)': iter.c.toFixed(6),
+    'f(a)': iter.fa.toFixed(6),
+    'f(b)': iter.fb.toFixed(6),
+    'f(c)': iter.fc.toFixed(6),
+  }));
 
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? "opacity-50 cursor-not-allowed" : ""} hover:bg-purple-400`}
-          color="violet"
-          altText="Demo"
-        />
+  return (
+    <div className="w-full space-y-6">
+      {/* Control Card */}
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
+        
+        {/* Header Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
+          <div>
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              ROOT FINDER LABORATORY
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Bisection Method Interactive Engine
+            </h3>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
+          </div>
+        </div>
+
+        {error && (
+          <div className="p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Solver Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-1.5">
+              <label htmlFor="function" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Function Expression <InlineMath math="f(x)" />
+              </label>
+              <input
+                type="text"
+                id="function"
+                value={functionInput}
+                onChange={handleFunctionChange}
+                placeholder="e.g., x^3 - 4*x - 9"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="tolerance" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Tolerance (<InlineMath math="\epsilon" />)
+              </label>
+              <input
+                type="number"
+                id="tolerance"
+                step="0.00001"
+                value={tolerance}
+                onChange={handleToleranceChange}
+                placeholder="e.g., 0.0001"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <EditorialButton
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-full sm:w-auto"
+            >
+              <FiCheckCircle className="w-4 h-4 mr-2" /> Calculate Root
+            </EditorialButton>
+          </div>
+        </form>
+
+        {/* Results Banner */}
+        {result && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Convergence Reached ({iterationsCount} iterations)
+              </span>
+              <span className="text-base md:text-lg font-mono font-black">
+                {result}
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Bisection Method Report"
+              elementId="bisection-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 rounded-xl">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="function" className="font-semibold">Enter Function <InlineMath math="f(x)" />:</label>
-          <input
-            type="text"
-            id="function"
-            value={functionInput}
-            onChange={handleFunctionChange}
-            placeholder="e.g., x * x - 4"
-            required
-            className="w-full p-3 border border-gray-300 dark:border-neutral-600 rounded-xl dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="tolerance" className="font-semibold">Enter Tolerance:</label>
-          <input
-            type="number"
-            id="tolerance"
-            step="0.00001"
-            value={tolerance}
-            onChange={handleToleranceChange}
-            placeholder="e.g., 0.0001"
-            required
-            className="w-full p-3 border border-gray-300 dark:border-neutral-600 rounded-xl dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-        </div>
-
-        <div className="flex justify-between items-center pt-2">
-          <button
-            type="submit"
-            id="Calculate"
-            className="focus:outline-none focus:ring-2 focus:ring-offset-2 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-green-600 bg-green-500 active:bg-green-700 transition"
-          >
-            Calculate
-          </button>
-
-          <TButton
-            tooltipText="Reset"
-            onClick={handleReset}
-            imgSrc="/reset.svg"
-            altText="Reset"
-            color="red"
-          />
-        </div>
-      </form>
-
-      {intervalSteps.length > 0 && (
-        <div className="p-4 bg-amber-50 dark:bg-neutral-900 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-neutral-700 rounded-xl space-y-1">
-          <strong className="block mb-1">Interval Detection Steps [ a , b ]:</strong>
-          {intervalSteps.map((step, index) => (
-            <p key={index} className="text-sm">{step}</p>
-          ))}
-        </div>
-      )}
-
-      {result && (
-        <div className="p-4 bg-emerald-50 dark:bg-neutral-900 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-neutral-700 rounded-xl font-semibold">
-          <strong>Result:</strong> {result}
-        </div>
-      )}
-
+      {/* Output & Visualizer Sections */}
       {bisectionIterations.length > 0 && (
-        <div className="w-full mx-auto dark:bg-neutral-900 p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Plot:</h2>
-            <ExportToPNG 
-              elementId="graphCanvas"
-              fileName="graphCanvas.png"
-              tooltipText="Export&nbsp;Plot&nbsp;to&nbsp;PNG"
-              color="blue"
-              altText="Export Plot" 
+        <div id="bisection-results-container" className="space-y-6">
+          
+          {/* Sub-navigation Tabs */}
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Iteration Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> Step Derivations
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('plot')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'plot'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiTrendingUp className="w-3.5 h-3.5" /> Convergence Plot
+              </button>
+            </div>
+
+            <EditorialExportButton
+              title="Bisection Method Report"
+              elementId="bisection-results-container"
+              exportData={exportData}
+              size="sm"
             />
           </div>
-          <UnifiedPlot 
-            iterations={bisectionIterations} 
-            functionInput={functionInput}  
-          />
-        </div>
-      )}
 
-      {bisectionIterations.length > 0 && (
-        <div className="w-full mx-auto space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Bisection Method Iterations:</h2>
-            <ExportToPNG 
-              elementId="Table"
-              fileName="table.png"
-              tooltipText="Export&nbsp;Table&nbsp;to&nbsp;PNG"
-              color="blue"
-              altText="Export Table" 
-            />
-          </div>
-          <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-neutral-700">
-            <table id="Table" className="w-full table-auto border-collapse text-center">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-neutral-900">
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">Iteration</th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">a</th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">b</th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">c(mid)</th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">f(a)</th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">f(b)</th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">f(c)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bisectionIterations.map((iter, index) => (
-                  <tr key={index} className={index === bisectionIterations.length - 1 ? 'bg-emerald-600 text-white font-bold' : (index % 2 === 0 ? 'bg-gray-50 dark:bg-neutral-800' : 'bg-white dark:bg-neutral-900')}>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.iteration}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.a.toFixed(6)}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.b.toFixed(6)}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.c.toFixed(6)}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.fa.toFixed(6)}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.fb.toFixed(6)}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{iter.fc.toFixed(6)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+          {/* Iteration Table View */}
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Bisection Iteration Log
+              </h4>
 
-      {bisectionIterations.length > 0 && (
-        <div className="w-full mx-auto text-wrap dark:bg-neutral-900 p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Detailed Steps:</h2>
-            <ExportToPNG 
-              elementId="steps"
-              fileName="steps.png"
-              tooltipText="Export&nbsp;Steps&nbsp;to&nbsp;PNG" 
-              color="blue" 
-              altText="Export Steps" 
-            />
-          </div>
-          <div id="steps" className="space-y-4">
-            {bisectionIterations.map((iter, index) => (
-              <div key={index} className="p-4 bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl space-y-2">
-                <h3 className="text-lg font-semibold">Iteration {iter.iteration}</h3>
-                <BlockMath math={`a^{(${iter.iteration})} = ${iter.a.toFixed(6)}`} />
-                <BlockMath math={`b^{(${iter.iteration})} = ${iter.b.toFixed(6)}`} />
-                <BlockMath math={`c^{(${iter.iteration})} = \\frac{a + b}{2} = \\frac{${iter.a.toFixed(6)} + ${iter.b.toFixed(6)}}{2} = ${iter.c.toFixed(6)}`} />
-                <BlockMath math={`f(c^{(${iter.iteration})}) = ${iter.fc.toFixed(6)}`} />
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Iter</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">a</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">b</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">c (Midpoint)</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">f(a)</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">f(b)</th>
+                      <th className="p-3">f(c)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bisectionIterations.map((iter, index) => (
+                      <tr
+                        key={index}
+                        className={
+                          index === bisectionIterations.length - 1
+                            ? 'bg-emerald-500 text-white font-bold'
+                            : index % 2 === 0
+                            ? 'bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white'
+                            : 'bg-white dark:bg-neutral-900 text-black dark:text-white'
+                        }
+                      >
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{iter.iteration}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{iter.a.toFixed(6)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{iter.b.toFixed(6)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700 font-bold">{iter.c.toFixed(6)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{iter.fa.toFixed(6)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{iter.fb.toFixed(6)}</td>
+                        <td className="p-3 border-t border-neutral-200 dark:border-neutral-700">{iter.fc.toFixed(6)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Detailed Step Derivations View */}
+          {(viewTab === 'all' || viewTab === 'steps') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Interval Halving
+              </h4>
+
+              <div className="space-y-3">
+                {bisectionIterations.slice(0, 5).map((iter, index) => (
+                  <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400">
+                      <span>Iteration {iter.iteration}</span>
+                      <span>Midpoint Calculation</span>
+                    </div>
+                    <div className="overflow-x-auto text-center py-1">
+                      <BlockMath math={`c^{(${iter.iteration})} = \\frac{a + b}{2} = \\frac{${iter.a.toFixed(6)} + ${iter.b.toFixed(6)}}{2} = ${iter.c.toFixed(6)}`} />
+                    </div>
+                    <div className="text-xs font-mono text-neutral-600 dark:text-neutral-300 text-center">
+                      <InlineMath math={`f(c) = ${iter.fc.toFixed(6)}`} /> &rarr; {iter.fa * iter.fc < 0 ? 'Sign change in left interval [a, c]. New b = c.' : 'Sign change in right interval [c, b]. New a = c.'}
+                    </div>
+                  </div>
+                ))}
+                {bisectionIterations.length > 5 && (
+                  <p className="text-xs font-mono text-center text-neutral-500 italic">
+                    ... {bisectionIterations.length - 5} remaining iterations summarized in table above.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Plot View */}
+          {(viewTab === 'all' || viewTab === 'plot') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Interactive Function Plot
+              </h4>
+
+              <div id="graphCanvas" className="w-full">
+                <UnifiedPlot
+                  iterations={bisectionIterations}
+                  functionInput={functionInput}
+                />
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>
@@ -382,3 +491,4 @@ const BisectionMethod = () => {
 };
 
 export default BisectionMethod;
+

@@ -1,168 +1,361 @@
 'use client';
 
-import "katex/dist/katex.min.css";
-import { InlineMath, BlockMath } from "react-katex";
+import React from 'react';
 import Head from 'next/head';
-import NewtonBackwardInterpolations from "./algorithems.newton-backward-interpolations";
-import ThemeToggle from "../../../../components/ThemeToggle";
-import FullscreenToggle from "@/app/components/FullscreenToggle";
+import { InlineMath, BlockMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+import FullscreenToggle from '@/app/components/FullscreenToggle';
+import { EditorialThemeToggle } from '@/app/components/editorial';
+import NewtonBackwardInterpolations from './algorithems.newton-backward-interpolations';
 import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function NewtonBackwardInterpolation() {
-  const str = `P(x) = y_n + v \\cdot \\Delta y_n + \\frac{v(v+1)}{2!} \\cdot \\Delta^2 y_{n-2} + \\frac{v(v+1)(v+2)}{3!} \\Delta^{3} y_{n-3} \\ldots`;
-  const data = [
-    { xxx: 24, yyy: 28.0600, deltaY: '', delta2Y: '', delta3Y: '', delta4Y: '' },
-    { xxx: 28, yyy: 30.1900, deltaY: 2.1300, delta2Y: '', delta3Y: '', delta4Y: '' },
-    { xxx: 32, yyy: 32.7500, deltaY: 2.5600, delta2Y: 0.4300, delta3Y: '', delta4Y: '' },
-    { xxx: 36, yyy: 34.9400, deltaY: 2.1900, delta2Y: -0.3700, delta3Y: -0.8000, delta4Y: '' },
-    { xxx: 40, yyy: 40.0000, deltaY: 5.0600, delta2Y: 2.8700, delta3Y: 3.2400, delta4Y: 4.0400 },
-  ];
-
   const formula = `
-    P(x) = y_n + v \\cdot \\Delta y_n + \\frac{v(v+1)}{2!} \\cdot \\Delta^2 y_{n-2} 
-    + \\frac{v(v+1)(v+2)}{3!} \\cdot \\Delta^3 y_{n-3} 
-    + \\frac{v(v+1)(v+2)(v+3)}{4!} \\cdot \\Delta^4 y_{n-4} + \\cdots
+    P(x) = y_n + v \\cdot \\nabla y_n + \\frac{v(v+1)}{2!} \\cdot \\nabla^2 y_n + \\frac{v(v+1)(v+2)}{3!} \\cdot \\nabla^3 y_n + \\frac{v(v+1)(v+2)(v+3)}{4!} \\cdot \\nabla^4 y_n + \\cdots
   `;
 
   return (
     <>
       <Head>
         <title>Newton Backward Interpolation | Netz</title>
-        <meta name="description" content="Master Newton Backward Interpolation method with step-by-step explanations and examples." />
+        <meta name="description" content="Master Newton Backward Interpolation with friendly step-by-step guidance, backward difference tables, and an interactive visualizer." />
       </Head>
 
-      <FullscreenToggle className="dark:bg-neutral-800 w-full min-h-screen">
-        <div className="md:ml-[80px]">
-          <section className="container mx-auto px-4 md:px-8 py-10 dark:bg-neutral-800 dark:text-white space-y-8">
-            
-            {/* Header */}
-            <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-neutral-700">
-              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-                Newton Backward Interpolation Method
-              </h1>
-              <ThemeToggle />
-            </div>
-
-            {/* Overview */}
-            <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-              Newton Backward Interpolation is used to estimate the value of a function at a given point when the data points are tabulated at equal intervals. This method is particularly useful when you want to interpolate a value near the end of the data set. It utilizes backward differences to form the interpolation polynomial.
-            </p>
-
-            {/* Formula Callout */}
-            <div className="space-y-3">
-              <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 text-center">Formula for Newton Backward Interpolation:</p>
-              <div className="w-full md:w-[80%] mx-auto p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
-                <BlockMath math={formula} />
-              </div>
-              <div className="space-y-2 text-lg text-gray-700 dark:text-gray-300 pl-4">
-                <p className="font-semibold">Where:</p>
-                <ul className="list-disc list-inside space-y-1 pl-2">
-                  <li><InlineMath math="v = \frac{x - x_n}{h}" /></li>
-                  <li><InlineMath math="x_n" /> is the last value of <InlineMath math="x" /> in the data.</li>
-                  <li><InlineMath math="h" /> is the uniform difference between the <InlineMath math="x" /> values (where <InlineMath math="h = x_n - x_{n-1}" />).</li>
-                  <li><InlineMath math="\Delta y_n, \Delta^2 y_n, \dots" /> are the backward differences.</li>
-                </ul>
-              </div>
-            </div>
-
-            <hr className="my-8 border-gray-300 dark:border-neutral-700" />
-
-            {/* Example Section */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-neutral-700">
-                Example of Newton Backward Interpolation
-              </h2>
-
-              <p className="text-lg text-gray-700 dark:text-gray-300">Let&apos;s say we are given the following data points:</p>
-
-              {/* Data Table */}
-              <div className="flex justify-center overflow-x-auto my-4">
-                <table className="w-full max-w-md border-collapse border border-gray-200 dark:border-neutral-700 rounded-xl overflow-hidden shadow-sm">
-                  <thead>
-                    <tr className="bg-gray-100 dark:bg-neutral-900">
-                      <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center text-gray-900 dark:text-white"><InlineMath math="x" /></th>
-                      <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center text-gray-900 dark:text-white"><InlineMath math="y" /></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.map((row, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-gray-50 dark:bg-neutral-800' : 'bg-white dark:bg-neutral-900'}>
-                        <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.xxx}</td>
-                        <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.yyy}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <p className="text-lg text-gray-700 dark:text-gray-300">We are tasked with finding <InlineMath math="y" /> where <InlineMath math="x = 33" />.</p>
-
-              {/* Step 1: Backward Difference Table */}
-              <div className="space-y-3 py-1">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 1: Calculate Backward Differences</h3>
-                <div className="flex justify-center overflow-x-auto my-2">
-                  <table className="w-full max-w-3xl border-collapse border border-gray-200 dark:border-neutral-700 rounded-xl overflow-hidden shadow-sm">
-                    <thead>
-                      <tr className="bg-gray-100 dark:bg-neutral-900">
-                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="x" /></th>
-                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="y" /></th>
-                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="{\Delta y}" /></th>
-                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="{\Delta^2 y}" /></th>
-                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="{\Delta^3 y}" /></th>
-                        <th className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center"><InlineMath math="{\Delta^4 y}" /></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.map((row, index) => (
-                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-50 dark:bg-neutral-800' : 'bg-white dark:bg-neutral-900'}>
-                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.xxx}</td>
-                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.yyy}</td>
-                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.deltaY}</td>
-                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.delta2Y}</td>
-                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.delta3Y}</td>
-                          <td className="border border-gray-200 dark:border-neutral-700 px-4 py-2 text-center">{row.delta4Y}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+      <FullscreenToggle className="w-full min-h-screen">
+        <div className="w-full min-h-screen bg-[#FAF8F5] dark:bg-[#111111] text-black dark:text-white transition-colors editorial-grid-bg">
+          <div className="md:ml-[80px]">
+            <section className="container mx-auto px-4 md:px-8 py-10 space-y-10 max-w-6xl">
+              
+              {/* Header & Badges */}
+              <div className="space-y-4 pt-2">
+                <div className="flex justify-between items-start">
+                  <div className="inline-block border-2 border-black dark:border-white bg-[#FFE600] text-black px-3 py-0.5 text-xs font-mono font-black uppercase tracking-widest shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-md">
+                    UNIT 2 • EQUAL INTERVAL INTERPOLATION
+                  </div>
+                  <EditorialThemeToggle />
                 </div>
-              </div>
 
-              {/* Step 2 */}
-              <div className="space-y-2 py-1">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 2: Calculate v</h3>
-                <p className="text-gray-700 dark:text-gray-300">Using the formula <InlineMath math="v = \frac{x - x_n}{h}" />:</p>
-                <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-2">
-                  <BlockMath math={"\\text{Given } x = 33, x_n = 40, h = 4"} />
-                  <BlockMath math="v = \frac{33 - 40}{4} = -1.75" />
-                </div>
-              </div>
+                <h1 className="text-3xl md:text-5xl font-black tracking-tight uppercase leading-tight text-black dark:text-white">
+                  Newton Backward <br />
+                  <span className="underline decoration-4 underline-offset-8 decoration-black dark:decoration-white">Interpolation Method</span>
+                </h1>
 
-              {/* Step 3 */}
-              <div className="space-y-2 py-1">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 3: Apply Newton Backward Formula</h3>
-                <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center space-y-2">
-                  <BlockMath math={str} />
-                </div>
-              </div>
-
-              {/* Conclusion Box */}
-              <div className="w-full md:w-[80%] mx-auto p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2 text-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Conclusion</h2>
-                <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Newton Backward Interpolation efficiently computes values near the bottom of tabulated datasets using backward difference tables.
+                <p className="text-base md:text-lg font-medium text-neutral-700 dark:text-neutral-300 max-w-3xl leading-relaxed">
+                  <strong>Newton Backward Interpolation</strong> is used to estimate the value of a function at a given point when data points are tabulated at equal intervals. This method is particularly useful when you want to interpolate a value near the end of the data set by utilizing backward differences.
                 </p>
               </div>
-            </div>
 
-            {/* Calculator Component */}
-            <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
-              <NewtonBackwardInterpolations />
-            </div>
+              {/* Core Governing Formula Box */}
+              <div className="border-2 border-black/80 dark:border-neutral-600 bg-[#FAF8F5] dark:bg-neutral-900 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.12)] space-y-6">
+                <div className="absolute inset-0 pointer-events-none opacity-35 dark:opacity-40 editorial-dots-bg" />
+                <div className="relative z-10 space-y-4">
+                  <div className="flex justify-between items-center border-b border-black/30 dark:border-neutral-700 pb-3">
+                    <span className="font-mono font-extrabold text-xs uppercase tracking-widest text-black dark:text-white">
+                      BACKWARD DIFFERENCE FORMULA
+                    </span>
+                    <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-bold text-xs px-2.5 py-0.5 rounded-md uppercase">
+                      END-POINT ANCHOR
+                    </span>
+                  </div>
 
-            {/* Sequential Routing Navigation */}
-            <AlgorithmNavigation />
-          </section>
+                  <div className="py-4 text-center overflow-x-auto">
+                    <BlockMath math={formula} />
+                  </div>
+
+                  <div className="space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    <p className="font-bold text-black dark:text-white">Where:</p>
+                    <ul className="list-disc list-inside space-y-1.5 font-mono text-xs pl-2">
+                      <li>
+                        <InlineMath math="v = \frac{x - x_n}{h}" /> is the backward fractional distance.
+                      </li>
+                      <li>
+                        <InlineMath math="x_n" /> is the last value of <InlineMath math="x" /> in the dataset.
+                      </li>
+                      <li>
+                        <InlineMath math="h" /> is the uniform step size between <InlineMath math="x" /> values (<InlineMath math="h = x_n - x_{n-1}" />).
+                      </li>
+                      <li>
+                        <InlineMath math="\nabla y_n, \nabla^2 y_n, \nabla^3 y_n, \dots" /> are the backward differences along the bottom row.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs font-mono">
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">1. Backward Ratio (v)</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Distance measured backwards from the final baseline <InlineMath math="x_n" />.
+                      </span>
+                    </div>
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">2. Equal Spacing (h)</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Constant gap between consecutive tabulated points.
+                      </span>
+                    </div>
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">3. Bottom-Row Operators</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Uses backward difference values along the bottom diagonal.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step-by-Step Worked Example Guide */}
+              <div className="space-y-6">
+                <div className="flex justify-between items-center pb-2 border-b-2 border-black/80 dark:border-neutral-700">
+                  <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
+                    Example of Newton Backward Interpolation
+                  </h2>
+                  <span className="text-xs font-mono font-bold bg-neutral-200 dark:bg-neutral-800 px-3 py-1 rounded-lg border border-black/40 dark:border-neutral-600">
+                    GUIDED STORY TUTORIAL
+                  </span>
+                </div>
+
+                {/* Problem Statement Card */}
+                <div className="border-2 border-black/80 dark:border-neutral-600 rounded-2xl p-5 bg-emerald-50 dark:bg-emerald-950/40 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-emerald-600 text-white text-[10px] font-mono font-black px-2.5 py-0.5 rounded-md uppercase">
+                      OUR PROBLEM TO SOLVE
+                    </span>
+                  </div>
+                  <p className="text-sm md:text-base font-semibold text-emerald-950 dark:text-emerald-200">
+                    Let&apos;s say we are given the following data points:
+                  </p>
+                  <div className="overflow-x-auto py-2">
+                    <table className="w-full max-w-md mx-auto text-xs font-mono text-center border-collapse border border-black/30 dark:border-neutral-700">
+                      <thead>
+                        <tr className="bg-neutral-100 dark:bg-neutral-800 font-bold border-b border-black/30 dark:border-neutral-700">
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">x</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">24</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">28</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">32</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">36</th>
+                          <th className="p-2.5">40</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="bg-white dark:bg-neutral-900 border-b border-black/20 dark:border-neutral-700">
+                          <td className="p-2.5 font-bold border-r border-black/20 dark:border-neutral-700">y</td>
+                          <td className="p-2.5 border-r border-black/20 dark:border-neutral-700">28.06</td>
+                          <td className="p-2.5 border-r border-black/20 dark:border-neutral-700">30.19</td>
+                          <td className="p-2.5 border-r border-black/20 dark:border-neutral-700">32.75</td>
+                          <td className="p-2.5 border-r border-black/20 dark:border-neutral-700">34.94</td>
+                          <td className="p-2.5">40.00</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-sm font-semibold text-center text-neutral-700 dark:text-neutral-300">
+                    We are tasked with finding <InlineMath math="y" /> where <InlineMath math="x = 33" />.
+                  </p>
+                </div>
+
+                {/* Step 1: Backward Difference Table */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 md:p-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 01</span> • <span>CALCULATE THE BACKWARD DIFFERENCES FOR THE Y VALUES</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                    We construct the difference table by subtracting each <InlineMath math="y" /> value from its successor. The bottom row values (highlighted in emerald) form our primary backward difference vector <InlineMath math="[y_n, \\nabla y_n, \\nabla^2 y_n, \\nabla^3 y_n, \\nabla^4 y_n]" />:
+                  </p>
+
+                  <div className="overflow-x-auto rounded-xl border-2 border-black/30 dark:border-neutral-700">
+                    <table className="w-full text-center text-xs md:text-sm font-mono border-collapse">
+                      <thead>
+                        <tr className="bg-neutral-200 dark:bg-neutral-900 text-black dark:text-white border-b-2 border-black/30 dark:border-neutral-700 font-bold">
+                          <th className="p-3 border-r border-black/20 dark:border-neutral-700">x</th>
+                          <th className="p-3 border-r border-black/20 dark:border-neutral-700">y</th>
+                          <th className="p-3 border-r border-black/20 dark:border-neutral-700">&nabla;y</th>
+                          <th className="p-3 border-r border-black/20 dark:border-neutral-700">&nabla;²y</th>
+                          <th className="p-3 border-r border-black/20 dark:border-neutral-700">&nabla;³y</th>
+                          <th className="p-3">&nabla;⁴y</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-black/15 dark:border-neutral-700">
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold">24</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">28.06</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">-</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">-</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">-</td>
+                          <td className="p-2.5">-</td>
+                        </tr>
+                        <tr className="border-b border-black/15 dark:border-neutral-700">
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold">28</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">30.19</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">2.13</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">-</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">-</td>
+                          <td className="p-2.5">-</td>
+                        </tr>
+                        <tr className="border-b border-black/15 dark:border-neutral-700">
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold">32</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">32.75</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">2.56</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">0.43</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">-</td>
+                          <td className="p-2.5">-</td>
+                        </tr>
+                        <tr className="border-b border-black/15 dark:border-neutral-700">
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold">36</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">34.94</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">2.19</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">-0.37</td>
+                          <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">-0.80</td>
+                          <td className="p-2.5">-</td>
+                        </tr>
+                        <tr className="bg-emerald-500 text-white font-bold">
+                          <td className="p-2.5 border-r border-emerald-600">40 (x_n)</td>
+                          <td className="p-2.5 border-r border-emerald-600">40.00 (y_n)</td>
+                          <td className="p-2.5 border-r border-emerald-600">5.06 (∇y_n)</td>
+                          <td className="p-2.5 border-r border-emerald-600">2.87 (∇²y_n)</td>
+                          <td className="p-2.5 border-r border-emerald-600">3.24 (∇³y_n)</td>
+                          <td className="p-2.5">4.04 (∇⁴y_n)</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Step 2: Calculate v */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 md:p-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 02</span> • <span>USE THE FORMULA v = (x - x_n) / h</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Given target point <InlineMath math="x = 33" />, final base point <InlineMath math="x_n = 40" />, and uniform step size <InlineMath math="h = 4" />:
+                  </p>
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-sm overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`v = \\frac{x - x_n}{h}`} />
+                    <BlockMath math={`v = \\frac{33 - 40}{4} = \\frac{-7}{4} = -1.75`} />
+                  </div>
+                </div>
+
+                {/* Step 3: Apply Formula & Numerical Substitution */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 md:p-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-5">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 03</span> • <span>APPLY THE NEWTON BACKWARD INTERPOLATION FORMULA</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                      Governing polynomial expansion:
+                    </p>
+                    <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs md:text-sm overflow-x-auto text-center">
+                      <BlockMath math={`P(x) = y_n + v \\cdot \\nabla y_n + \\frac{v(v+1)}{2!} \\cdot \\nabla^2 y_n + \\frac{v(v+1)(v+2)}{3!} \\cdot \\nabla^3 y_n + \\frac{v(v+1)(v+2)(v+3)}{4!} \\cdot \\nabla^4 y_n + \\cdots`} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <p className="text-sm font-bold text-black dark:text-white">
+                      Substituting the values (<InlineMath math="v = -1.75, y_n = 40, \\nabla y_n = 5.06, \\nabla^2 y_n = 2.87, \\nabla^3 y_n = 3.24, \\nabla^4 y_n = 4.04" />):
+                    </p>
+                    <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
+                      <BlockMath math={`P(33) = 40 + \\frac{-1.75}{1!} (5.06) + \\frac{-1.75(-1.75+1)}{2!} (2.87) + \\frac{-1.75(-1.75+1)(-1.75+2)}{3!} (3.24) + \\frac{-1.75(-1.75+1)(-1.75+2)(-1.75+3)}{4!} (4.04)`} />
+                    </div>
+                  </div>
+
+                  {/* Step-by-Step Term Breakdown */}
+                  <div className="space-y-3 pt-3 border-t border-black/20 dark:border-neutral-700">
+                    <h3 className="text-sm font-black uppercase text-black dark:text-white tracking-wider">
+                      Step-by-step Term Breakdown:
+                    </h3>
+
+                    <div className="space-y-3 font-mono text-xs">
+                      {/* Term 1 */}
+                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
+                          First term (Base Anchor y_n):
+                        </span>
+                        <BlockMath math="40" />
+                      </div>
+
+                      {/* Term 2 */}
+                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
+                          Second term [ v · ∇y_n ]:
+                        </span>
+                        <BlockMath math="\\frac{-1.75}{1!} \\cdot 5.0600 = -8.85500" />
+                      </div>
+
+                      {/* Term 3 */}
+                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
+                          Third term [ v(v+1)/2! · ∇²y_n ]:
+                        </span>
+                        <BlockMath math="\\frac{-1.75 \\cdot (-1.75+1)}{2!} \\cdot 2.8700 = \\frac{1.3125}{2} \\cdot 2.8700 = 1.88344" />
+                      </div>
+
+                      {/* Term 4 */}
+                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
+                          Fourth term [ v(v+1)(v+2)/3! · ∇³y_n ]:
+                        </span>
+                        <BlockMath math="\\frac{-1.75 \\cdot (-1.75+1) \\cdot (-1.75+2)}{3!} \\cdot 3.2400 = \\frac{0.328125}{6} \\cdot 3.2400 = 0.17718" />
+                      </div>
+
+                      {/* Term 5 */}
+                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
+                          Fifth term [ v(v+1)(v+2)(v+3)/4! · ∇⁴y_n ]:
+                        </span>
+                        <BlockMath math="\\frac{-1.75 \\cdot (-1.75+1) \\cdot (-1.75+2) \\cdot (-1.75+3)}{4!} \\cdot 4.0400 = \\frac{0.410156}{24} \\cdot 4.0400 = 0.06904" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Adding them together */}
+                  <div className="space-y-2 pt-3 border-t border-black/20 dark:border-neutral-700">
+                    <p className="text-sm font-bold text-black dark:text-white uppercase tracking-wider">
+                      Adding them together:
+                    </p>
+                    <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border-2 border-black/40 dark:border-neutral-700 rounded-xl font-mono text-xs md:text-sm overflow-x-auto text-center space-y-2">
+                      <BlockMath math={`P(33) = 40 + (-8.85500) + 1.88344 + 0.17718 + 0.06904`} />
+                      <BlockMath math={`P(33) = 33.27466`} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 4: Final Conclusion */}
+                <div className="border-2 border-black/80 dark:border-neutral-600 rounded-2xl p-6 relative overflow-hidden bg-[#FAF8F5] dark:bg-neutral-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-3">
+                  <div className="absolute inset-0 pointer-events-none opacity-35 dark:opacity-40 editorial-dots-bg" />
+                  <div className="relative z-10 space-y-3">
+                    <span className="bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md uppercase">
+                      CONCLUSION
+                    </span>
+                    <h3 className="text-xl font-bold text-black dark:text-white">
+                      Interpolated Result: y(33) &approx; 33.27466
+                    </h3>
+                    <div className="p-4 bg-white dark:bg-neutral-800 border-2 border-black/20 dark:border-neutral-700 rounded-xl font-mono text-sm overflow-x-auto text-center">
+                      <BlockMath math={`\\boxed{P(33) \\approx 33.27466}`} />
+                    </div>
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium leading-relaxed">
+                      Thus, the interpolated value of <InlineMath math="y" /> at <InlineMath math="x = 33" /> using <strong>Newton Backward Interpolation</strong> is approximately <strong>33.27466</strong>.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Interactive Calculator Section */}
+              <div className="pt-8 border-t-2 border-black/80 dark:border-neutral-700 space-y-6">
+                <div className="inline-block border border-black/60 dark:border-neutral-600 bg-black text-white dark:bg-white dark:text-black px-2.5 py-0.5 text-xs font-mono font-bold rounded-md uppercase mb-1">
+                  LABORATORY
+                </div>
+                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
+                  Interactive Live Calculator & Visualizer
+                </h2>
+                <NewtonBackwardInterpolations />
+              </div>
+
+              {/* Sequential Routing Navigation */}
+              <AlgorithmNavigation />
+
+            </section>
+          </div>
         </div>
       </FullscreenToggle>
     </>

@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import TButton from '@/app/components/TButton';
-import ExportToPNG from '@/app/utils/ExportToPNG';
+import { EditorialButton, EditorialExportButton } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiCheckCircle, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const TTestSolver = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
@@ -14,6 +14,7 @@ const TTestSolver = () => {
   const [result, setResult] = useState(null);
   const [gridLog, setGridLog] = useState([]);
   const [error, setError] = useState('');
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps'
 
   const calculateTTest = (sampleStr, muVal) => {
     setError('');
@@ -40,6 +41,7 @@ const TTestSolver = () => {
 
     const tCalc = (mean - mu) / (s / Math.sqrt(n));
 
+    setGridLog(log);
     setResult({
       n,
       mean,
@@ -47,13 +49,12 @@ const TTestSolver = () => {
       s2,
       df,
       mu,
-      tCalc
+      tCalc,
     });
-    setGridLog(log);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleCalculate = (e) => {
+    e?.preventDefault();
     calculateTTest(sampleDataInput, hypothesizedMean);
   };
 
@@ -66,168 +67,237 @@ const TTestSolver = () => {
   };
 
   const handleReset = () => {
-    setSampleDataInput('');
+    setSampleDataInput('12, 15, 14, 11, 13, 16, 15, 14');
     setHypothesizedMean(13);
     setResult(null);
     setGridLog([]);
     setError('');
   };
 
+  const exportData = result ? [
+    { Statistic: 'Sample Size', Symbol: 'n', Value: result.n },
+    { Statistic: 'Sample Mean', Symbol: 'x̄', Value: result.mean.toFixed(4) },
+    { Statistic: 'Sample Variance', Symbol: 's^2', Value: result.s2.toFixed(4) },
+    { Statistic: 'Sample Std Deviation', Symbol: 's', Value: result.s.toFixed(4) },
+    { Statistic: 'Degrees of Freedom', Symbol: 'd.f.', Value: result.df },
+    { Statistic: 'Calculated t-Statistic', Symbol: 't', Value: result.tCalc.toFixed(4) },
+  ] : [];
+
   return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">One-Sample Student&apos;s t-Test Solver</h1>
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? 'opacity-50 cursor-not-allowed' : ''} hover:bg-purple-600`}
-          color="violet"
-          altText="Demo"
-        />
-      </div>
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="w-full space-y-6">
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
           <div>
-            <label htmlFor="sampleData" className="block text-sm font-semibold mb-1">
-              Sample Data Values (comma-separated):
-            </label>
-            <input
-              type="text"
-              id="sampleData"
-              value={sampleDataInput}
-              onChange={(e) => setSampleDataInput(e.target.value)}
-              placeholder="e.g. 12, 15, 14, 11, 13, 16, 15, 14"
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              HYPOTHESIS TESTING LABORATORY
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Student&apos;s t-Test Engine (One-Sample)
+            </h3>
           </div>
 
-          <div>
-            <label htmlFor="hypoMean" className="block text-sm font-semibold mb-1">
-              Hypothesized Population Mean <InlineMath math="\\mu_0" />:
-            </label>
-            <input
-              type="number"
-              id="hypoMean"
-              step="any"
-              value={hypothesizedMean}
-              onChange={(e) => setHypothesizedMean(e.target.value)}
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
           </div>
         </div>
 
-        <div className="flex justify-between items-center pt-2">
-          <button
-            type="submit"
-            id="Calculate"
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg shadow-md transition-colors"
-          >
-            Calculate t-Statistic
-          </button>
-
-          <TButton
-            tooltipText="Reset"
-            onClick={handleReset}
-            imgSrc="/reset.svg"
-            altText="Reset"
-            color="red"
-            float="float-right"
-          />
-        </div>
-      </form>
-
-      {gridLog.length > 0 && (
-        <div className="my-6 p-4 bg-yellow-100 text-yellow-800 dark:bg-neutral-700 dark:text-yellow-200 rounded-xl space-y-1">
-          <strong>t-Test Initialization Log:</strong>
-          {gridLog.map((log, idx) => (
-            <p key={idx} className="font-mono text-sm">{log}</p>
-          ))}
-        </div>
-      )}
-
-      {result && (
-        <div className="my-4 p-4 bg-green-100 text-green-800 dark:bg-neutral-700 dark:text-green-200 rounded-xl font-bold text-lg">
-          Calculated t-Statistic: <InlineMath math={`t = ${result.tCalc.toFixed(4)}`} /> (d.f. = {result.df})
-        </div>
-      )}
-
-      {result && (
-        <div className="my-6 overflow-x-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Sample Statistics Table:</h2>
-            <ExportToPNG
-              elementId="Table"
-              fileName="ttest_table.png"
-              tooltipText="Export Table to PNG"
-              color="blue"
-            />
+        {error && (
+          <div className="p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
           </div>
-          <table id="Table" className="w-full table-auto border-collapse border dark:border-neutral-600 text-left text-sm">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-neutral-700">
-                <th className="border p-3">Statistic</th>
-                <th className="border p-3">Symbol</th>
-                <th className="border p-3">Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border p-3 font-mono">Sample Size</td>
-                <td className="border p-3 font-mono">n</td>
-                <td className="border p-3 font-mono">{result.n}</td>
-              </tr>
-              <tr>
-                <td className="border p-3 font-mono">Sample Mean</td>
-                <td className="border p-3 font-mono">\bar&#123;x&#125;</td>
-                <td className="border p-3 font-mono">{result.mean.toFixed(4)}</td>
-              </tr>
-              <tr>
-                <td className="border p-3 font-mono">Sample Variance</td>
-                <td className="border p-3 font-mono">s^2</td>
-                <td className="border p-3 font-mono">{result.s2.toFixed(4)}</td>
-              </tr>
-              <tr>
-                <td className="border p-3 font-mono">Sample Std Deviation</td>
-                <td className="border p-3 font-mono">s</td>
-                <td className="border p-3 font-mono">{result.s.toFixed(4)}</td>
-              </tr>
-              <tr>
-                <td className="border p-3 font-mono">Degrees of Freedom</td>
-                <td className="border p-3 font-mono">d.f.</td>
-                <td className="border p-3 font-mono">{result.df}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+        )}
 
-      {result && (
-        <div className="mt-6 p-6 dark:bg-neutral-700 rounded-2xl border border-gray-200 dark:border-neutral-600 space-y-4">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-semibold">Detailed KaTeX Step-by-Step Substitution:</h2>
-            <ExportToPNG
-              elementId="steps"
-              fileName="ttest_steps.png"
-              tooltipText="Export Steps to PNG"
-              color="blue"
-            />
-          </div>
-          <div id="steps" className="space-y-4 font-mono">
-            <div className="p-4 bg-blue-50 dark:bg-neutral-900 rounded-xl border border-blue-300 dark:border-blue-700">
-              <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">t-Statistic Formula & Evaluation</h3>
-              <BlockMath math={`t = \\frac{\\bar{x} - \\mu_0}{s / \\sqrt{n}}`} />
-              <BlockMath math={`t = \\frac{${result.mean.toFixed(4)} - ${result.mu}}{${result.s.toFixed(4)} / \\sqrt{${result.n}}} = \\frac{${(result.mean - result.mu).toFixed(4)}}{${(result.s / Math.sqrt(result.n)).toFixed(4)}} = ${result.tCalc.toFixed(4)}`} />
+        <form onSubmit={handleCalculate} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="sampleData" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Sample Values (comma separated)
+              </label>
+              <input
+                type="text"
+                id="sampleData"
+                value={sampleDataInput}
+                onChange={(e) => setSampleDataInput(e.target.value)}
+                placeholder="e.g. 12, 15, 14, 11, 13, 16, 15, 14"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="hypoMean" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Hypothesized Mean (<InlineMath math="\mu_0" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                id="hypoMean"
+                value={hypothesizedMean}
+                onChange={(e) => setHypothesizedMean(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
             </div>
           </div>
+
+          <EditorialButton
+            type="submit"
+            variant="primary"
+            size="md"
+            className="w-full"
+          >
+            <FiCheckCircle className="w-4 h-4 mr-2" /> Calculate t-Statistic
+          </EditorialButton>
+        </form>
+
+        {result && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Calculated t-Statistic Result
+              </span>
+              <span className="text-base md:text-lg font-mono font-black">
+                t = {result.tCalc.toFixed(4)} (d.f. = {result.df})
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Student t-Test Report"
+              elementId="ttest-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
+        )}
+      </div>
+
+      {result && (
+        <div id="ttest-results-container" className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Sample Statistics Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> Formula Substitution
+              </button>
+            </div>
+
+            <EditorialExportButton
+              title="Student t-Test Report"
+              elementId="ttest-results-container"
+              exportData={exportData}
+              size="sm"
+            />
+          </div>
+
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Sample Descriptives Table
+              </h4>
+
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Statistic</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Symbol</th>
+                      <th className="p-3">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white">
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">Sample Size</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">n</td>
+                      <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{result.n}</td>
+                    </tr>
+                    <tr className="bg-white dark:bg-neutral-900 text-black dark:text-white">
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">Sample Mean</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">x&#772;</td>
+                      <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{result.mean.toFixed(4)}</td>
+                    </tr>
+                    <tr className="bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white">
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">Sample Variance</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">s^2</td>
+                      <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{result.s2.toFixed(4)}</td>
+                    </tr>
+                    <tr className="bg-white dark:bg-neutral-900 text-black dark:text-white">
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">Sample Standard Deviation</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">s</td>
+                      <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{result.s.toFixed(4)}</td>
+                    </tr>
+                    <tr className="bg-emerald-500 text-white font-bold">
+                      <td className="p-3 border-t border-r border-emerald-600">Degrees of Freedom</td>
+                      <td className="p-3 border-t border-r border-emerald-600">d.f.</td>
+                      <td className="p-3 border-t border-emerald-600">{result.df}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'steps') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> t-Statistic Formula Substitution
+              </h4>
+
+              <div className="p-4 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-3 font-mono text-xs">
+                <div className="space-y-1">
+                  <span className="font-bold text-neutral-500 uppercase block">Formula Evaluation:</span>
+                  <BlockMath math={`t = \\frac{\\bar{x} - \\mu_0}{s / \\sqrt{n}}`} />
+                  <BlockMath math={`t = \\frac{${result.mean.toFixed(4)} - ${result.mu}}{${result.s.toFixed(4)} / \\sqrt{${result.n}}} = \\frac{${(result.mean - result.mu).toFixed(4)}}{${(result.s / Math.sqrt(result.n)).toFixed(4)}} = ${result.tCalc.toFixed(4)}`} />
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import TButton from '@/app/components/TButton';
-import ExportToPNG from '@/app/utils/ExportToPNG';
 import Plot from '@/app/components/UnifiedPlot';
+import { EditorialButton, EditorialExportButton } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiCheckCircle, FiTrendingUp, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const FittingParabolaSolver = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
@@ -16,6 +16,7 @@ const FittingParabolaSolver = () => {
   const [stepsData, setStepsData] = useState([]);
   const [gridLog, setGridLog] = useState([]);
   const [error, setError] = useState('');
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
 
   const solve3x3 = (A, B) => {
     const M = A.map((row, i) => [...row, B[i]]);
@@ -67,7 +68,7 @@ const FittingParabolaSolver = () => {
 
     const n = xArr.length;
     const log = [];
-    log.push(`Sample Data Points n = ${n}`);
+    log.push(`Sample Data Count n = ${n}`);
 
     let sumX = 0, sumY = 0, sumX2 = 0, sumX3 = 0, sumX4 = 0, sumXY = 0, sumX2Y = 0;
     const table = [];
@@ -77,7 +78,7 @@ const FittingParabolaSolver = () => {
       const y = yArr[i];
       const x2 = x * x;
       const x3 = x2 * x;
-      const x4 = x3 * x;
+      const x4 = x2 * x2;
       const xy = x * y;
       const x2y = x2 * y;
 
@@ -95,234 +96,328 @@ const FittingParabolaSolver = () => {
     const A = [
       [sumX4, sumX3, sumX2],
       [sumX3, sumX2, sumX],
-      [sumX2, sumX, n]
+      [sumX2, sumX, n],
     ];
     const B = [sumX2Y, sumXY, sumY];
 
-    const coeffs = solve3x3(A, B);
-    if (!coeffs) {
-      setError('Could not fit a unique parabola for the provided data.');
+    const sol = solve3x3(A, B);
+    if (!sol) {
+      setError('System matrix is singular or degenerate (cannot solve 3x3 system).');
       return;
     }
 
-    const [a, b, c] = coeffs;
+    const [a, b, c] = sol;
 
-    setResult({
-      n,
-      sumX,
-      sumY,
-      sumX2,
-      sumX3,
-      sumX4,
-      sumXY,
-      sumX2Y,
-      a,
-      b,
-      c
-    });
+    log.push(`Sum X = ${sumX}, Sum Y = ${sumY}`);
+    log.push(`Sum X^2 = ${sumX2}, Sum X^3 = ${sumX3}, Sum X^4 = ${sumX4}`);
+    log.push(`Sum XY = ${sumXY}, Sum X^2Y = ${sumX2Y}`);
+    log.push(`Coefficients: a = ${a.toFixed(4)}, b = ${b.toFixed(4)}, c = ${c.toFixed(4)}`);
+
     setGridLog(log);
     setStepsData(table);
+    setResult({ n, sumX, sumY, sumX2, sumX3, sumX4, sumXY, sumX2Y, a, b, c });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleCalculate = (e) => {
+    e?.preventDefault();
     calculateParabolaFit(xValuesInput, yValuesInput);
   };
 
   const handleDemo = () => {
     setDemoInProgress(true);
-    setXValuesInput('-2, -1, 0, 1, 2');
-    setYValuesInput('15, 7, 3, 3, 7');
-    calculateParabolaFit('-2, -1, 0, 1, 2', '15, 7, 3, 3, 7');
+    const demoX = '-2, -1, 0, 1, 2';
+    const demoY = '15, 7, 3, 3, 7';
+    setXValuesInput(demoX);
+    setYValuesInput(demoY);
+    calculateParabolaFit(demoX, demoY);
     setDemoInProgress(false);
   };
 
   const handleReset = () => {
-    setXValuesInput('');
-    setYValuesInput('');
+    setXValuesInput('-2, -1, 0, 1, 2');
+    setYValuesInput('15, 7, 3, 3, 7');
     setResult(null);
     setStepsData([]);
     setGridLog([]);
     setError('');
   };
 
+  const exportData = stepsData.map((row) => ({
+    Index: row.index,
+    x: row.x,
+    y: row.y,
+    'x^2': row.x2,
+    'x^3': row.x3,
+    'x^4': row.x4,
+    'x*y': row.xy,
+    'x^2*y': row.x2y,
+  }));
+
+  if (result) {
+    exportData.push({
+      Index: 'Sum',
+      x: result.sumX,
+      y: result.sumY,
+      'x^2': result.sumX2,
+      'x^3': result.sumX3,
+      'x^4': result.sumX4,
+      'x*y': result.sumXY,
+      'x^2*y': result.sumX2Y,
+    });
+  }
+
   return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Fitting a Parabola (Quadratic Fit)</h1>
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? 'opacity-50 cursor-not-allowed' : ''} hover:bg-purple-600`}
-          color="violet"
-          altText="Demo"
-        />
-      </div>
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="w-full space-y-6">
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
           <div>
-            <label htmlFor="xVals" className="block text-sm font-semibold mb-1">
-              x Values (comma-separated):
-            </label>
-            <input
-              type="text"
-              id="xVals"
-              value={xValuesInput}
-              onChange={(e) => setXValuesInput(e.target.value)}
-              placeholder="e.g. -2, -1, 0, 1, 2"
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              QUADRATIC REGRESSION LABORATORY
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Fitting a Parabola Engine
+            </h3>
           </div>
 
-          <div>
-            <label htmlFor="yVals" className="block text-sm font-semibold mb-1">
-              y Values (comma-separated):
-            </label>
-            <input
-              type="text"
-              id="yVals"
-              value={yValuesInput}
-              onChange={(e) => setYValuesInput(e.target.value)}
-              placeholder="e.g. 15, 7, 3, 3, 7"
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
           </div>
         </div>
 
-        <div className="flex justify-between items-center pt-2">
-          <button
-            type="submit"
-            id="Calculate"
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg shadow-md transition-colors"
-          >
-            Fit Parabola y = ax^2 + bx + c
-          </button>
-
-          <TButton
-            tooltipText="Reset"
-            onClick={handleReset}
-            imgSrc="/reset.svg"
-            altText="Reset"
-            color="red"
-            float="float-right"
-          />
-        </div>
-      </form>
-
-      {gridLog.length > 0 && (
-        <div className="my-6 p-4 bg-yellow-100 text-yellow-800 dark:bg-neutral-700 dark:text-yellow-200 rounded-xl space-y-1">
-          <strong>Parabola Fit Initialization Log:</strong>
-          {gridLog.map((log, idx) => (
-            <p key={idx} className="font-mono text-sm">{log}</p>
-          ))}
-        </div>
-      )}
-
-      {result && (
-        <div className="my-4 p-4 bg-green-100 text-green-800 dark:bg-neutral-700 dark:text-green-200 rounded-xl font-bold text-lg">
-          Fitted Parabola Equation: <InlineMath math={`y = ${result.a.toFixed(4)}x^2 + ${result.b.toFixed(4)}x + ${result.c.toFixed(4)}`} />
-        </div>
-      )}
-
-      {stepsData.length > 0 && result && (
-        <div className="mt-6 p-6 dark:bg-neutral-700 rounded-2xl border border-gray-200 dark:border-neutral-600">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Parabola Fit Scatter Plot:</h2>
-            <ExportToPNG
-              elementId="graphCanvas"
-              fileName="parabola_fit_plot.png"
-              tooltipText="Export Plot to PNG"
-              color="blue"
-            />
+        {error && (
+          <div className="p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
           </div>
-          <div id="graphCanvas">
-            <Plot dataPoints={stepsData} parabolaCoeffs={{ a: result.a, b: result.b, c: result.c }} title="Quadratic Parabola Fit" />
-          </div>
-        </div>
-      )}
+        )}
 
-      {stepsData.length > 0 && (
-        <div className="my-6 overflow-x-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Normal Equations Data Table:</h2>
-            <ExportToPNG
-              elementId="Table"
-              fileName="parabola_fit_table.png"
-              tooltipText="Export Table to PNG"
-              color="blue"
-            />
-          </div>
-          <table id="Table" className="w-full table-auto border-collapse border dark:border-neutral-600 text-left text-sm">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-neutral-700">
-                <th className="border p-2">#</th>
-                <th className="border p-2">x</th>
-                <th className="border p-2">y</th>
-                <th className="border p-2">x^2</th>
-                <th className="border p-2">x^3</th>
-                <th className="border p-2">x^4</th>
-                <th className="border p-2">x*y</th>
-                <th className="border p-2">x^2*y</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stepsData.map((row) => (
-                <tr key={row.index} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50">
-                  <td className="border p-2 font-mono">{row.index}</td>
-                  <td className="border p-2 font-mono">{row.x}</td>
-                  <td className="border p-2 font-mono">{row.y}</td>
-                  <td className="border p-2 font-mono">{row.x2}</td>
-                  <td className="border p-2 font-mono">{row.x3}</td>
-                  <td className="border p-2 font-mono">{row.x4}</td>
-                  <td className="border p-2 font-mono">{row.xy}</td>
-                  <td className="border p-2 font-mono">{row.x2y}</td>
-                </tr>
-              ))}
-              <tr className="bg-emerald-50 dark:bg-neutral-900 font-bold">
-                <td className="border p-2">Sum (\Sigma)</td>
-                <td className="border p-2 font-mono">{result.sumX}</td>
-                <td className="border p-2 font-mono">{result.sumY}</td>
-                <td className="border p-2 font-mono">{result.sumX2}</td>
-                <td className="border p-2 font-mono">{result.sumX3}</td>
-                <td className="border p-2 font-mono">{result.sumX4}</td>
-                <td className="border p-2 font-mono">{result.sumXY}</td>
-                <td className="border p-2 font-mono">{result.sumX2Y}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+        <form onSubmit={handleCalculate} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="xValues" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                x Values (comma separated)
+              </label>
+              <input
+                type="text"
+                id="xValues"
+                value={xValuesInput}
+                onChange={(e) => setXValuesInput(e.target.value)}
+                placeholder="e.g. -2, -1, 0, 1, 2"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
 
-      {result && (
-        <div className="mt-6 p-6 dark:bg-neutral-700 rounded-2xl border border-gray-200 dark:border-neutral-600 space-y-4">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-semibold">Detailed KaTeX 3x3 Matrix Substitution:</h2>
-            <ExportToPNG
-              elementId="steps"
-              fileName="parabola_fit_steps.png"
-              tooltipText="Export Steps to PNG"
-              color="blue"
-            />
-          </div>
-          <div id="steps" className="space-y-4 font-mono">
-            <div className="p-4 bg-emerald-50 dark:bg-neutral-900 rounded-xl border border-emerald-300 dark:border-emerald-700">
-              <h3 className="text-lg font-bold text-emerald-800 dark:text-emerald-300 mb-2">3x3 System of Normal Equations</h3>
-              <BlockMath math={`a \\sum x^4 + b \\sum x^3 + c \\sum x^2 = \\sum x^2 y \\implies ${result.sumX4} a + ${result.sumX3} b + ${result.sumX2} c = ${result.sumX2Y}`} />
-              <BlockMath math={`a \\sum x^3 + b \\sum x^2 + c \\sum x = \\sum xy \\implies ${result.sumX3} a + ${result.sumX2} b + ${result.sumX} c = ${result.sumXY}`} />
-              <BlockMath math={`a \\sum x^2 + b \\sum x + n c = \\sum y \\implies ${result.sumX2} a + ${result.sumX} b + ${result.n} c = ${result.sumY}`} />
-              <BlockMath math={`a = ${result.a.toFixed(4)}, \\quad b = ${result.b.toFixed(4)}, \\quad c = ${result.c.toFixed(4)}`} />
-              <BlockMath math={`y = ${result.a.toFixed(4)} x^2 + ${result.b.toFixed(4)} x + ${result.c.toFixed(4)}`} />
+            <div className="space-y-1.5">
+              <label htmlFor="yValues" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                y Values (comma separated)
+              </label>
+              <input
+                type="text"
+                id="yValues"
+                value={yValuesInput}
+                onChange={(e) => setYValuesInput(e.target.value)}
+                placeholder="e.g. 15, 7, 3, 3, 7"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
             </div>
           </div>
+
+          <EditorialButton
+            type="submit"
+            variant="primary"
+            size="md"
+            className="w-full"
+          >
+            <FiCheckCircle className="w-4 h-4 mr-2" /> Fit Parabola Y = aX^2 + bX + c
+          </EditorialButton>
+        </form>
+
+        {result && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Fitted Parabola Equation Result
+              </span>
+              <span className="text-base md:text-lg font-mono font-black">
+                y = {result.a.toFixed(4)}x^2 + {result.b.toFixed(4)}x + {result.c.toFixed(4)}
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Parabola Fitting Report"
+              elementId="parabola-fit-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
+        )}
+      </div>
+
+      {stepsData.length > 0 && (
+        <div id="parabola-fit-results-container" className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Summation Matrix Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> 3x3 System Substitution
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('plot')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'plot'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiTrendingUp className="w-3.5 h-3.5" /> Parabola Curve Plot
+              </button>
+            </div>
+
+            <EditorialExportButton
+              title="Parabola Fitting Report"
+              elementId="parabola-fit-results-container"
+              exportData={exportData}
+              size="sm"
+            />
+          </div>
+
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Parabola Normal Equations Data Table
+              </h4>
+
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-2 border-r border-neutral-700 dark:border-neutral-300">#</th>
+                      <th className="p-2 border-r border-neutral-700 dark:border-neutral-300">x</th>
+                      <th className="p-2 border-r border-neutral-700 dark:border-neutral-300">y</th>
+                      <th className="p-2 border-r border-neutral-700 dark:border-neutral-300">x^2</th>
+                      <th className="p-2 border-r border-neutral-700 dark:border-neutral-300">x^3</th>
+                      <th className="p-2 border-r border-neutral-700 dark:border-neutral-300">x^4</th>
+                      <th className="p-2 border-r border-neutral-700 dark:border-neutral-300">x &middot; y</th>
+                      <th className="p-2">x^2 &middot; y</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stepsData.map((row, idx) => (
+                      <tr
+                        key={row.index}
+                        className={
+                          idx % 2 === 0
+                            ? 'bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white'
+                            : 'bg-white dark:bg-neutral-900 text-black dark:text-white'
+                        }
+                      >
+                        <td className="p-2 border-t border-r border-neutral-200 dark:border-neutral-700">{row.index}</td>
+                        <td className="p-2 border-t border-r border-neutral-200 dark:border-neutral-700">{row.x}</td>
+                        <td className="p-2 border-t border-r border-neutral-200 dark:border-neutral-700">{row.y}</td>
+                        <td className="p-2 border-t border-r border-neutral-200 dark:border-neutral-700">{row.x2}</td>
+                        <td className="p-2 border-t border-r border-neutral-200 dark:border-neutral-700">{row.x3}</td>
+                        <td className="p-2 border-t border-r border-neutral-200 dark:border-neutral-700">{row.x4}</td>
+                        <td className="p-2 border-t border-r border-neutral-200 dark:border-neutral-700">{row.xy}</td>
+                        <td className="p-2 border-t border-neutral-200 dark:border-neutral-700 font-bold">{row.x2y}</td>
+                      </tr>
+                    ))}
+                    {result && (
+                      <tr className="bg-emerald-500 text-white font-bold">
+                        <td className="p-2 border-t border-r border-emerald-600">Sum (&Sigma;)</td>
+                        <td className="p-2 border-t border-r border-emerald-600">{result.sumX}</td>
+                        <td className="p-2 border-t border-r border-emerald-600">{result.sumY}</td>
+                        <td className="p-2 border-t border-r border-emerald-600">{result.sumX2}</td>
+                        <td className="p-2 border-t border-r border-emerald-600">{result.sumX3}</td>
+                        <td className="p-2 border-t border-r border-emerald-600">{result.sumX4}</td>
+                        <td className="p-2 border-t border-r border-emerald-600">{result.sumXY}</td>
+                        <td className="p-2 border-t border-emerald-600">{result.sumX2Y}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'steps') && result && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> 3x3 Normal Equations System Substitution
+              </h4>
+
+              <div className="p-4 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-3 font-mono text-xs">
+                <div className="space-y-1">
+                  <span className="font-bold text-neutral-500 uppercase block">Normal Equations:</span>
+                  <BlockMath math={`a \\sum x^4 + b \\sum x^3 + c \\sum x^2 = \\sum x^2 y \\implies ${result.sumX4} a + ${result.sumX3} b + ${result.sumX2} c = ${result.sumX2Y}`} />
+                  <BlockMath math={`a \\sum x^3 + b \\sum x^2 + c \\sum x = \\sum xy \\implies ${result.sumX3} a + ${result.sumX2} b + ${result.sumX} c = ${result.sumXY}`} />
+                  <BlockMath math={`a \\sum x^2 + b \\sum x + n c = \\sum y \\implies ${result.sumX2} a + ${result.sumX} b + ${result.n} c = ${result.sumY}`} />
+                  <BlockMath math={`a = ${result.a.toFixed(4)}, \\quad b = ${result.b.toFixed(4)}, \\quad c = ${result.c.toFixed(4)}`} />
+                  <BlockMath math={`y = ${result.a.toFixed(4)} x^2 + ${result.b.toFixed(4)} x + ${result.c.toFixed(4)}`} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'plot') && result && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Quadratic Parabola Fit Plot
+              </h4>
+
+              <div id="graphCanvas" className="w-full">
+                <Plot dataPoints={stepsData} parabolaCoeffs={{ a: result.a, b: result.b, c: result.c }} title="Quadratic Parabola Fit" />
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

@@ -1,22 +1,21 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { BlockMath, InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
 import Plot from '@/app/components/UnifiedPlot';
-import TButton from "../../../../components/TButton";
-
-import ExportToPNG from "@/app/utils/ExportToPNG";
-
-
+import { EditorialButton, EditorialExportButton } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiPlus, FiTrash2, FiCheckCircle, FiTrendingUp, FiLayers, FiList } from 'react-icons/fi';
 
 export default function NewtonBackwardInterpolations({ theme }) {
   const [vSteps, setVSteps] = useState([]);
-
   const [xRange, setXRange] = useState(Array.from({ length: 100 }, (_, i) => i));
-
-  const [inline, setInline] = useState(false);
-  const [rows, setRows] = useState([{ x: "", y: "" }]);
-  const [interpolateX, setInterpolateX] = useState("");
+  const [rows, setRows] = useState([
+    { x: "10", y: "0.1736" },
+    { x: "20", y: "0.3420" },
+    { x: "30", y: "0.5000" },
+    { x: "40", y: "0.6428" },
+  ]);
+  const [interpolateX, setInterpolateX] = useState("38");
   const [output, setOutput] = useState("");
   const [diffTable, setDiffTable] = useState([]);
   const [polynomialSteps, setPolynomialSteps] = useState({
@@ -26,10 +25,7 @@ export default function NewtonBackwardInterpolations({ theme }) {
     final: "",
   });
   const [demoInProgress, setDemoInProgress] = useState(false);
-
-
-  // Function to export table to PNG
- 
+  const [viewTab, setViewTab] = useState('all'); 
 
   const handleAddRow = () => {
     setRows([...rows, { x: "", y: "" }]);
@@ -37,405 +33,408 @@ export default function NewtonBackwardInterpolations({ theme }) {
 
   const handleDeleteRow = (index) => {
     if (rows.length === 1) {
-      // Clear the values of the last row instead of deleting
       setRows([{ x: "", y: "" }]);
     } else {
-      // Delete the specified row
-      const newRows = rows.filter((_, i) => i !== index);
-      setRows(newRows);
+      setRows(rows.filter((_, i) => i !== index));
     }
   };
+
   const handleInputChange = (index, type, value) => {
     const newRows = [...rows];
     newRows[index][type] = value;
     setRows(newRows);
   };
-  const xValues = rows.map((row) => parseFloat(row.x));
 
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    const points = rows
+      .map((row) => ({ x: parseFloat(row.x), y: parseFloat(row.y) }))
+      .filter((p) => !isNaN(p.x) && !isNaN(p.y));
+
+    if (points.length < 2) {
+      alert("Please enter at least 2 valid points.");
+      return;
+    }
+
+    const xToInterpolate = parseFloat(interpolateX);
+    if (isNaN(xToInterpolate)) {
+      alert("Please enter a valid X value to interpolate.");
+      return;
+    }
+
+    const {
+      interpolatedValue,
+      diffTable: computedTable,
+      stepFormulas,
+      stepSubstituted,
+      stepCalculated,
+      vSteps: calculatedVSteps,
+    } = newtonBackwardInterpolation(points, xToInterpolate);
+
+    const minX = Math.min(...points.map(p => p.x)) - 5;
+    const maxX = Math.max(...points.map(p => p.x)) + 5;
+    setXRange(Array.from({ length: 100 }, (_, i) => minX + i * (maxX - minX) / 99));
+
+    setOutput(`f(${xToInterpolate}) = ${interpolatedValue.toFixed(6)}`);
+    setDiffTable(computedTable);
+    setPolynomialSteps({
+      formulas: stepFormulas,
+      substituted: stepSubstituted,
+      calculated: stepCalculated,
+      final: `f(${xToInterpolate}) = ${interpolatedValue.toFixed(6)}`,
+    });
+    setVSteps(calculatedVSteps);
+  };
+
+  const handleDemo = () => {
+    setDemoInProgress(true);
+    setRows([
+      { x: "10", y: "0.1736" },
+      { x: "20", y: "0.3420" },
+      { x: "30", y: "0.5000" },
+      { x: "40", y: "0.6428" },
+    ]);
+    setInterpolateX("38");
+    setTimeout(() => {
+      handleSubmit();
+      setDemoInProgress(false);
+    }, 100);
+  };
 
   const handleReset = () => {
-    // Reset all form inputs and clear output
-    setRows([{ x: "", y: "" }]); // Reset table to a single row
-    setInterpolateX(""); // Clear the interpolated X input
-    setOutput(""); // Clear the output
-    setDiffTable([]); // Clear the difference table
-    setVSteps([]); // Clear the v calculation steps
+    setRows([{ x: "", y: "" }]);
+    setInterpolateX("");
+    setOutput("");
+    setDiffTable([]);
     setPolynomialSteps({
       formulas: [],
       substituted: [],
       calculated: [],
       final: "",
-    }); // Clear polynomial steps
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const xValues = rows.map((row) => parseFloat(row.x));
-    const yValues = rows.map((row) => parseFloat(row.y));
-    const x = parseFloat(interpolateX);
-
-    if (xValues.length < 2 || yValues.length < 2) {
-      setOutput("Please enter at least two data points.");
-      return;
-    }
-
-    const points = xValues.map((xi, i) => ({ x: xi, y: yValues[i] }));
-    const {
-      interpolatedValue,
-      diffTable,
-      stepFormulas,
-      stepSubstituted,
-      stepCalculated,
-      vSteps,
-    } = newtonBackwardInterpolation(points, x);
-
-    const minX = Math.min(...xValues) - 5;
-    const maxX = Math.max(...xValues) + 5;
-    setXRange(Array.from({ length: 100 }, (_, i) => minX + i * (maxX - minX) / 99));
-
-
-
-    setVSteps(vSteps);
-    setDiffTable(diffTable);
-    setPolynomialSteps({
-      formulas: stepFormulas,
-      substituted: stepSubstituted,
-      calculated: stepCalculated,
-      final: `Interpolated value at x = ${x}: P(${x}) = ${interpolatedValue}`,
     });
-    setOutput(`Interpolated value at x = ${x}: P(${x}) = ${interpolatedValue}`);
+    setVSteps([]);
   };
 
-  const handleDemo = async () => {
-    const demoX = [24, 28, 32, 36, 40];
-    const demoY = [28.06, 30.19, 32.75, 34.94, 40];
-    const demoInterpolateX = 33;
+  const xValues = rows.map((r) => r.x);
 
-    setDemoInProgress(true);
-
-    for (let i = 0; i < demoX.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setRows((prevRows) => {
-        const newRows = [...prevRows];
-        if (newRows[i]) {
-          newRows[i].x = demoX[i];
-          newRows[i].y = demoY[i];
-        } else {
-          newRows.push({ x: demoX[i], y: demoY[i] });
-        }
-        return newRows;
-      });
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setInterpolateX(demoInterpolateX);
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    document.getElementById("interpolateButton").click();
-
-    setDemoInProgress(false);
-  };
-  // Handle the copy to clipboard action
+  const exportData = diffTable.map((row, rowIndex) => {
+    const rowObj = { x: xValues[rowIndex] };
+    row.forEach((val, colIndex) => {
+      rowObj[`∇^${colIndex}Y`] = val !== undefined ? val.toFixed(4) : '';
+    });
+    return rowObj;
+  });
 
   return (
-    <div className="container mx-auto md:p-8  transition-all duration-300 dark:bg-neutral-700 dark:text-white">
-      <div className="flex justify-between items-center mb-6 text-slate-900 dark:text-white">
-        <h1 className="text-2xl font-bold">
-          Newton Backward Interpolation Calculator
-        </h1>
-
-
-        <TButton
-
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? "opacity-50 cursor-not-allowed" : ""
-            } hover:bg-purple-400`}
-          color="violet"
-          altText={demoInProgress ? "Demo Running..." : "Demo"}
-        ></TButton>
-
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-      <table className="w-[80%] m-auto table-auto md:ml-[15%] md:table-fixed   p-4 shadow-md ">
-          <thead>
-            <tr >
-              <th className="border border-gray-300 p-2">X Value</th>
-
-              <th className="border border-gray-300z p-2">Y Value</th>
-              <th className="w-[100px]"></th>
-            </tr>
-          </thead>
-          <tbody >
-            {rows.map((row, index) => (
-              <tr key={index} className="md:w-[80%]"> 
-                <td className="border border-gray-300 p-2 ">
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="x.xxxx"
-                    className="w-full p-2 text-black dark:bg-neutral-800 dark:text-white dark:border-gray-600  rounded-md hover:border hover:border-neutral-300"
-                    value={row.x != null ? row.x : 0}
-                    onChange={(e) =>
-                      handleInputChange(index, "x", e.target.value)
-                    }
-                    required
-                  />
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="y.yyyy"
-                    className="w-full p-2 text-black dark:bg-neutral-800 dark:text-white dark:border-gray-600  rounded-md hover:border hover:border-neutral-300"
-                    value={row.y != null ? row.y : 0}
-
-                    onChange={(e) =>
-                      handleInputChange(index, "y", e.target.value)
-                    }
-                    required
-                  />
-                </td>
-                <td className=" p-2  flex justify-center w-[80px]">
-
-                  <TButton
-                    imgSrc="/delete.svg"
-                    altText="Delete"
-                    onClick={() => handleDeleteRow(index)}
-                    tooltipText="Delete"
-                    color="red"
-                    className=" "
-
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <TButton
-          tooltipText="add&nbsp;row"
-          onClick={handleAddRow}
-          imgSrc="/add-row-below.svg"
-          altText="add row"
-          color="blue"
-          className="text-lg"
-        />
-        <div className="space-y-2 shadow-lg border p-2">
-          <label htmlFor="interpolateX" className="font-bold">Interpolate at X:</label>
-          <input
-            type="number"
-            step="any"
-            placeholder="0.00000"
-            id="interpolateX"
-            className="w-full p-2 text-black dark:bg-neutral-800 dark:text-white dark:border-gray-600 rounded-md hover:border hover:border-neutral-300 "
-            value={interpolateX}
-            onChange={(e) => setInterpolateX(e.target.value)}
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          id="interpolateButton"
-          className="focus:outline-none focus:ring-2 focus:ring-offset-2 active:bg-opacity-80 text-white px-4 py-2 rounded hover:bg-green-400 bg-green-500 active:bg-green-700 focus:ring-green-700 "
-        >
-          Interpolate
-        </button>
-
-        <TButton
-          tooltipText="Reset"
-          onClick={handleReset}
-          imgSrc="/reset.svg"
-          altText="Reset"
-          className="float-right "
-          color="red"
-          float="float-right"
-        />
-
-
-      </form>
-      {xRange.length > 0 && (
-        <div className="mt-6 mx-auto dark:bg-neutral-600 p-8 rounded-2xl  hover:border hover:border-neutral-300 ">
-          <ExportToPNG 
-           elementId="graphCanvas"
-           fileName="graph.png"
-          tooltipText="Export&nbsp;Graph&nbsp;to&nbsp;PNG"
-          color="blue"
-          
-           altText="Export Graph" 
-          
-           float="float-right" />
-          <h2 className="text-xl font-semibold ">Plot:</h2>
-          <Plot  points={rows.map(row => ({ x: parseFloat(row.x), y: parseFloat(row.y) }))}
-              xRange={xRange} 
-              darkTheme={theme}
-              func={newtonBackwardInterpolation} />
-        </div>
-      )}
-     
-
-
-      {diffTable.length > 0 && (<div>
-        <ExportToPNG 
-           elementId="diffTable"
-           fileName="table.png"
-          tooltipText="Export&nbsp;Table to&nbsp;PNG"
-          color="blue"
-           className="overflow-visible "
-           altText="Export Table" 
-          
-           float="float-right" />
-        <div id="diffTable" className="mt-6 ml-8  overflow-x-auto dark:bg-neutral-700">
-          <div></div><h2 className="text-xl inline-block font-semibold">Difference Table </h2>
-
-
-          <table className="w-full table-auto border-collapse border border-gray-300 mt-4">
-            <thead>
-              <tr>
-                <th className="border border-gray-300 p-2">x</th>
-                {Array.from({ length: diffTable.length }).map((_, i) => (
-                  <th key={i} className="border border-gray-300 p-2">
-                    Δ<sup>{i}</sup>Y
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {diffTable.map((row, rowIndex) => (
-                <tr
-                  key={rowIndex}
-                  className={
-                    rowIndex === diffTable.length - 1 ? "bg-red-500" : ""
-                  }
-                >
-                  <td className="border border-gray-300 p-2">
-                    {xValues[rowIndex]}
-                  </td>
-
-                  {row.map((value, colIndex) => (
-                    <td key={colIndex} className="border border-gray-300 p-2">
-                      {value !== undefined
-                        ? value.toFixed(4) !== "0.0000"
-                          ? value.toFixed(4)
-                          : ""
-                        : ""}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div></div>
-      )}
-
-
-
-
-
-      <div id="steps" className="mt-6 text-wrap dark:bg-neutral-700">
-      
-        {vSteps.length > 0 && (
-          <div className="mt-6 overflow-visible">
-            <div className=" py-4"><h2 className="text-xl font-semibold inline-block ">V Calculation Steps</h2> <div className="inline-block float-right" >
-            <ExportToPNG 
-           elementId="steps"
-           fileName="steps.png"
-          tooltipText="Export&nbsp;Polynomial Steps&nbsp;to&nbsp;PNG" 
-          color="blue" 
-          altText="Export&nbsp;steps" 
-          className="" 
-          
-           float="float-right" />
+    <div className="w-full space-y-6">
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
         
-            
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
+          <div>
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              BACKWARD INTERPOLATION LABORATORY
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Newton Backward Interactive Engine
+            </h3>
+          </div>
 
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
+          </div>
+        </div>
 
-   <TButton
-        onClick={() =>
-          setInline(prev => !prev)}
-                                                        
-           float="float-right"
-            className="m-1 inline-block absolute
-          top-0 left-[-70px] "
-            altText="Inline"
-              tooltipText="Inline&nbsp;or&nbsp;Block"
-            color="red"
-/>
-</div></div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Data Points (<InlineMath math="(x_i, y_i)" />)
+              </label>
+              <EditorialButton
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddRow}
+              >
+                <FiPlus className="w-3.5 h-3.5 mr-1" /> Add Point
+              </EditorialButton>
+            </div>
 
-            <div className="mt-2 p-4 border border-gray-300 rounded-lg">
-
-              <pre className="overflow-x-auto">
-                <BlockMath math={vSteps.join(",")} />
-              </pre>
-
+            <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+              <table className="w-full text-xs md:text-sm font-mono">
+                <thead>
+                  <tr className="bg-black text-white dark:bg-white dark:text-black font-bold uppercase">
+                    <th className="p-3 text-center border-r border-neutral-700 dark:border-neutral-300">Point #</th>
+                    <th className="p-3 text-center border-r border-neutral-700 dark:border-neutral-300">x_i</th>
+                    <th className="p-3 text-center border-r border-neutral-700 dark:border-neutral-300">y_i</th>
+                    <th className="p-3 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, index) => (
+                    <tr key={index} className="border-t border-neutral-200 dark:border-neutral-800">
+                      <td className="p-2 text-center font-bold text-neutral-500">{index + 1}</td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          step="any"
+                          value={row.x}
+                          onChange={(e) => handleInputChange(index, "x", e.target.value)}
+                          placeholder="e.g. 10"
+                          className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-center font-bold text-black dark:text-white"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          step="any"
+                          value={row.y}
+                          onChange={(e) => handleInputChange(index, "y", e.target.value)}
+                          placeholder="e.g. 0.1736"
+                          className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-center font-bold text-black dark:text-white"
+                        />
+                      </td>
+                      <td className="p-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRow(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end pt-2">
+            <div className="sm:col-span-2 space-y-1.5">
+              <label htmlFor="interpolateX" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Target Interpolation Point (<InlineMath math="x" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                id="interpolateX"
+                value={interpolateX}
+                onChange={(e) => setInterpolateX(e.target.value)}
+                placeholder="e.g. 38"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <EditorialButton
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-full"
+            >
+              <FiCheckCircle className="w-4 h-4 mr-2" /> Interpolate Value
+            </EditorialButton>
+          </div>
+        </form>
+
+        {output && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Interpolated Solution
+              </span>
+              <span className="text-base md:text-lg font-mono font-black">
+                {output}
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Newton Backward Interpolation Report"
+              elementId="newton-backward-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
         )}
+      </div>
 
+      {diffTable.length > 0 && (
+        <div id="newton-backward-results-container" className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Difference Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> Polynomial Steps
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('plot')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'plot'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiTrendingUp className="w-3.5 h-3.5" /> Polynomial Curve
+              </button>
+            </div>
+          </div>
 
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Backward Difference Matrix
+              </h4>
 
-        <div className="space-y-4 ">
-          {polynomialSteps.formulas.length > 0 && (
-            <div className="mt-6">
-              <h2 className="text-xl font-semibold">Polynomial Steps</h2>
-              <div className="mt-2 p-4 border border-gray-300 rounded-lg">
-                <div className="">
-                  <h3 className="text-lg font-semibold p-5">Formulas:</h3>
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">x</th>
+                      {Array.from({ length: diffTable.length }).map((_, i) => (
+                        <th key={i} className="p-3 border-r border-neutral-700 dark:border-neutral-300">
+                          &nabla;<sup>{i}</sup>Y
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {diffTable.map((row, rowIndex) => (
+                      <tr
+                        key={rowIndex}
+                        className={
+                          rowIndex === diffTable.length - 1
+                            ? 'bg-emerald-500 text-white font-bold'
+                            : rowIndex % 2 === 0
+                            ? 'bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white'
+                            : 'bg-white dark:bg-neutral-900 text-black dark:text-white'
+                        }
+                      >
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700 font-bold">{xValues[rowIndex]}</td>
+                        {row.map((val, colIndex) => (
+                          <td key={colIndex} className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">
+                            {val !== undefined && val.toFixed(4) !== "0.0000" ? val.toFixed(4) : ""}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
-                  {inline ? (
-                    <div className="overflow-x-auto break-words overflow-y-visible p-4">
-                      <InlineMath math={polynomialSteps.formulas.join(`+ \\displaystyle`)} />
-                    </div>
+          {(viewTab === 'all' || viewTab === 'steps') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> Step Derivation & Polynomial Expansion
+              </h4>
 
-                  ) : (
-                    <pre className="overflow-x-auto break-words whitespace-normal">
-                      <BlockMath math={polynomialSteps.formulas.join("+")} />
-                    </pre>
-                  )}
+              {vSteps.length > 0 && (
+                <div className="p-4 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
+                  <span className="text-xs font-mono font-bold uppercase text-neutral-500 block">Step Parameter v Calculation:</span>
+                  <div className="overflow-x-auto py-1">
+                    <BlockMath math={vSteps.join(" \\quad, \\quad ")} />
+                  </div>
                 </div>
-                <div className="">
-                  <h3 className="text-lg font-semibold p-5">Substituted Values:</h3>
-                  {inline ? (
-                    <div className="break-words overflow-x-auto overflow-y-visible p-4 ">
-                      <InlineMath math={polynomialSteps.substituted.join(" + \\displaystyle")} />
+              )}
+
+              {polynomialSteps.formulas.length > 0 && (
+                <div className="p-4 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-4 font-mono text-xs">
+                  <div>
+                    <span className="text-xs font-mono font-bold uppercase text-neutral-500 block mb-1">1. General Polynomial Formula:</span>
+                    <div className="overflow-x-auto py-1">
+                      <BlockMath math={polynomialSteps.formulas.join(" + ")} />
                     </div>
-                  ) : (
-                    <pre className="break-words whitespace-normal overflow-x-auto p-4">
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-300 dark:border-neutral-700">
+                    <span className="text-xs font-mono font-bold uppercase text-neutral-500 block mb-1">2. Substituted Terms:</span>
+                    <div className="overflow-x-auto py-1">
                       <BlockMath math={polynomialSteps.substituted.join(" + ")} />
-                    </pre>
-                  )}
-
-                </div>
-                <div className="" >
-                  <h3 className="text-lg font-semibold p-5">Evaluated Terms:</h3>
-
-                  {inline ? (
-
-                    <div className="break-words overflow-x-auto overflow-y-visible p-4">
-                      <InlineMath math={polynomialSteps.calculated.join(` \\displaystyle +`)} />
                     </div>
-                  ) : (
-                    <pre className="break-words whitespace-normal overflow-x-auto">
-                      <BlockMath math={polynomialSteps.calculated.join("+")} />
-                    </pre>
-                  )}
+                  </div>
 
+                  <div className="pt-2 border-t border-neutral-300 dark:border-neutral-700">
+                    <span className="text-xs font-mono font-bold uppercase text-neutral-500 block mb-1">3. Evaluated Terms Sum:</span>
+                    <div className="overflow-x-auto py-1">
+                      <BlockMath math={polynomialSteps.calculated.join(" + ")} />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-300 dark:border-neutral-700">
+                    <span className="text-xs font-mono font-bold uppercase text-neutral-500 block mb-1">Final Result:</span>
+                    <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">{polynomialSteps.final}</p>
+                  </div>
                 </div>
-                <div className="overflow-x-auto p-4">
-                  <h3 className="text-lg font-semibold p-5">Final Answer:</h3>
-                  <p className="font-bold text-lg">{polynomialSteps.final}</p>
+              )}
+            </div>
+          )}
 
-                  <br></br>
-                </div>
+          {(viewTab === 'all' || viewTab === 'plot') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Interpolation Polynomial Plot
+              </h4>
 
+              <div id="graphCanvas" className="w-full">
+                <Plot
+                  points={rows.map(row => ({ x: parseFloat(row.x), y: parseFloat(row.y) }))}
+                  xRange={xRange}
+                  darkTheme={theme}
+                  func={newtonBackwardInterpolation}
+                />
               </div>
             </div>
           )}
 
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -459,8 +458,6 @@ function newtonBackwardInterpolation(points, x) {
   const xi = points.map((p) => p.x);
   const yi = points.map((p) => p.y);
 
- 
-
   let diffTable = Array.from({ length: n }, (_, i) => Array(n).fill(0));
   for (let i = 0; i < n; i++) {
     diffTable[i][0] = yi[i];
@@ -475,7 +472,6 @@ function newtonBackwardInterpolation(points, x) {
   const h = xi[1] - xi[0];
   let u = (x - xi[n - 1]) / (xi[1] - xi[0]); // Calculate 'u'
   let interpolatedValue = diffTable[n - 1][0]; // Starting with the last y-value
-  console.log(xi);
   let uProduct = 1;
   let factorial = 1;
 
@@ -485,10 +481,9 @@ function newtonBackwardInterpolation(points, x) {
 
   // Adding step for calculating 'v'
   let vSteps = [];
-  vSteps.push(`h = x₂ - x₁`);
+  vSteps.push(`h = x₂ - x₁ = ${h}`);
   vSteps.push(`v =\\frac{(x - x_n)}{ h}`);
   vSteps.push(`v =\\frac{(${x} - ${xi[n - 1]})}{ ${h}}`);
-
   vSteps.push(`v = ${(x - xi[n - 1]) / h}`);
 
   // Building the polynomial step by step
@@ -515,7 +510,7 @@ function newtonBackwardInterpolation(points, x) {
     );
 
     // Calculated steps
-    stepCalculated.push(`(${term})`);
+    stepCalculated.push(`(${term.toFixed(6)})`);
   }
 
   return {

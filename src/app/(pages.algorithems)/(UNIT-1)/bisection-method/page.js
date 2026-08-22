@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Head from 'next/head';
 import { BlockMath, InlineMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
@@ -9,190 +10,281 @@ import BisectionMethod from './algorithems.bisection-method';
 import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function BisectionMethods() {
+  const iterationData = [
+    { k: 1, a: '0.0000', b: '3.0000', c: '1.5000', fc: '-1.7500', sign: 'f(1.5) < 0', next: '[1.5000, 3.0000]' },
+    { k: 2, a: '1.5000', b: '3.0000', c: '2.2500', fc: '+1.0625', sign: 'f(2.25) > 0', next: '[1.5000, 2.2500]' },
+    { k: 3, a: '1.5000', b: '2.2500', c: '1.8750', fc: '-0.4844', sign: 'f(1.875) < 0', next: '[1.8750, 2.2500]' },
+    { k: 4, a: '1.8750', b: '2.2500', c: '2.0625', fc: '+0.2539', sign: 'f(2.0625) > 0', next: '[1.8750, 2.0625]' },
+    { k: 5, a: '1.8750', b: '2.0625', c: '1.9688', fc: '-0.1240', sign: 'f(1.9688) < 0', next: '[1.9688, 2.0625]' },
+    { k: 6, a: '1.9688', b: '2.0625', c: '2.0156', fc: '+0.0627', sign: 'f(2.0156) > 0', next: '[1.9688, 2.0156]' },
+    { k: 7, a: '1.9688', b: '2.0156', c: '1.9922', fc: '-0.0311', sign: 'f(1.9922) < 0', next: '[1.9922, 2.0156]' },
+    { k: 8, a: '1.9922', b: '2.0156', c: '2.0039', fc: '+0.0156', sign: 'f(2.0039) > 0', next: '[1.9922, 2.0039]' },
+  ];
+
   return (
-    <FullscreenToggle className="dark:bg-neutral-800 w-full min-h-screen">
-      <div className="md:ml-[80px]">
-        <section className="container mx-auto px-4 md:px-8 py-10 dark:bg-neutral-800 dark:text-white space-y-8">
-          
-          {/* Header */}
-          <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-neutral-700">
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-              Bisection Method
-            </h1>
-            <ThemeToggle />
+    <>
+      <Head>
+        <title>Bisection Method | Netz</title>
+        <meta name="description" content="Master the Bisection Method with gentle step-by-step guidance, clear formula derivations, and an interactive visualizer." />
+      </Head>
+
+      <FullscreenToggle className="w-full min-h-screen">
+        <div className="w-full min-h-screen bg-[#FAF8F5] dark:bg-[#111111] text-black dark:text-white transition-colors editorial-grid-bg">
+          <div className="md:ml-[80px]">
+            <section className="container mx-auto px-4 md:px-8 py-10 space-y-10 max-w-6xl">
+              
+              {/* Header & Badges */}
+              <div className="space-y-4 pt-2">
+                <div className="flex justify-between items-start">
+                  <div className="inline-block border-2 border-black dark:border-white bg-[#FFE600] text-black px-3 py-0.5 text-xs font-mono font-black uppercase tracking-widest shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-md">
+                    UNIT 1 • FINDING ROOTS OF EQUATIONS
+                  </div>
+                  <ThemeToggle />
+                </div>
+
+                <h1 className="text-3xl md:text-5xl font-black tracking-tight uppercase leading-tight text-black dark:text-white">
+                  The Bisection Method <br />
+                  <span className="underline decoration-4 underline-offset-8 decoration-black dark:decoration-white">Step-by-Step Friendly Guide</span>
+                </h1>
+
+                <p className="text-base md:text-lg font-medium text-neutral-700 dark:text-neutral-300 max-w-3xl leading-relaxed">
+                  The <strong>Bisection Method</strong> is a straightforward and reliable numerical technique used to find roots (solutions) of continuous functions. It works by repeatedly dividing an interval in half and selecting the subinterval where the function changes sign, thereby narrowing down the location of the root.
+                </p>
+              </div>
+
+              {/* Core Governing Formula Box */}
+              <div className="border-2 border-black/80 dark:border-neutral-600 bg-[#FAF8F5] dark:bg-neutral-900 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.12)]">
+                <div className="absolute inset-0 pointer-events-none opacity-35 dark:opacity-40 editorial-dots-bg" />
+                <div className="relative z-10 space-y-4">
+                  <div className="flex justify-between items-center border-b border-black/30 dark:border-neutral-700 pb-3">
+                    <span className="font-mono font-extrabold text-xs uppercase tracking-widest text-black dark:text-white">
+                      HOW THE BISECTION METHOD WORKS
+                    </span>
+                    <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-bold text-xs px-2.5 py-0.5 rounded-md uppercase">
+                      MIDPOINT CALCULATION
+                    </span>
+                  </div>
+
+                  <div className="py-4 text-center overflow-x-auto">
+                    <BlockMath math={`C = \\frac{a + b}{2}`} />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 text-xs font-mono">
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">1. Select Interval [a, b]</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Choose two points <InlineMath math="a" /> and <InlineMath math="b" /> such that <InlineMath math="f(a)" /> and <InlineMath math="f(b)" /> have opposite signs.
+                      </span>
+                    </div>
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">2. Calculate Midpoint (C)</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Compute <InlineMath math="C = \frac{a+b}{2}" /> to split interval in half.
+                      </span>
+                    </div>
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">3. Evaluate f(C)</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Check sign and value of <InlineMath math="f(C)" />.
+                      </span>
+                    </div>
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">4. Update Interval</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        If <InlineMath math="f(C) \approx 0" />, <InlineMath math="C" /> is the root! Otherwise, set <InlineMath math="a=C" /> or <InlineMath math="b=C" />.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step-by-Step Worked Example */}
+              <div className="space-y-6">
+                <div className="flex justify-between items-center pb-2 border-b-2 border-black/80 dark:border-neutral-700">
+                  <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
+                    Step-by-Step Worked Example
+                  </h2>
+                  <span className="text-xs font-mono font-bold bg-neutral-200 dark:bg-neutral-800 px-3 py-1 rounded-lg border border-black/40 dark:border-neutral-600">
+                    HAND-HOLDING TUTORIAL
+                  </span>
+                </div>
+
+                {/* Problem Statement Card */}
+                <div className="border-2 border-black/80 dark:border-neutral-600 rounded-2xl p-5 bg-emerald-50 dark:bg-emerald-950/40 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-emerald-600 text-white text-[10px] font-mono font-black px-2.5 py-0.5 rounded-md uppercase">
+                      OUR PROBLEM TO SOLVE
+                    </span>
+                  </div>
+                  <p className="text-sm md:text-base font-semibold text-emerald-950 dark:text-emerald-200">
+                    Find the root of <InlineMath math="x^2 = 4" /> using the Bisection Method with tolerance error margin <InlineMath math="0.01" />.
+                  </p>
+                </div>
+
+                {/* Step 1: Rearranging Equation */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 01</span> • <span>REARRANGING THE EQUATION</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                    First, set the equation to zero to get our standard function <InlineMath math="f(x) = 0" />:
+                  </p>
+                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
+                    <BlockMath math={`f(x) = x^2 - 4 = 0`} />
+                  </div>
+                </div>
+
+                {/* Step 2: Choose Initial Points */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 02</span> • <span>CHOOSE INITIAL POINTS</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Choose two initial points <InlineMath math="a" /> and <InlineMath math="b" /> such that <InlineMath math="f(a)" /> and <InlineMath math="f(b)" /> have opposite signs. Let&apos;s choose <InlineMath math="a = 0" /> and <InlineMath math="b = 3" />:
+                  </p>
+                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`f(0) = 0^2 - 4 = -4 \\quad (\\text{Negative})`} />
+                    <BlockMath math={`f(3) = 3^2 - 4 = 5 \\quad (\\text{Positive})`} />
+                  </div>
+                  <p className="text-xs font-mono text-neutral-600 dark:text-neutral-400">
+                    Since <InlineMath math="f(0) < 0" /> and <InlineMath math="f(3) > 0" />, a root must lie in <InlineMath math="[0, 3]" />!
+                  </p>
+                </div>
+
+                {/* Step 3: Calculate Midpoint */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 03</span> • <span>CALCULATE FIRST MIDPOINT</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Calculate the midpoint <InlineMath math="C" /> of the interval <InlineMath math="[a, b] = [0, 3]" />:
+                  </p>
+                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`C = \\frac{a + b}{2} = \\frac{0 + 3}{2} = 1.5`} />
+                    <BlockMath math={`f(1.5) = (1.5)^2 - 4 = 2.25 - 4 = -1.75 \\quad (\\text{Negative})`} />
+                  </div>
+                </div>
+
+                {/* Step 4: Update Interval */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 04</span> • <span>UPDATE THE INTERVAL</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Since <InlineMath math="f(0) < 0" /> and <InlineMath math="f(1.5) < 0" />, both left points are negative. The sign change happens between <InlineMath math="C = 1.5" /> and <InlineMath math="b = 3" />.
+                  </p>
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-xl font-mono text-xs text-center font-bold">
+                    Set new left bound: <InlineMath math="a = C = 1.5" />. New interval is <InlineMath math="[1.5, 3.0]" />.
+                  </div>
+                </div>
+
+                {/* Step 5: Iterations Walkthrough */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 05</span> • <span>STEP-BY-STEP ITERATIONS WALKTHROUGH</span>
+                  </div>
+
+                  {/* Iteration 2 */}
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-300 dark:border-neutral-700 space-y-2 text-xs font-mono">
+                    <strong className="text-amber-600 dark:text-amber-400 block">Iteration 2:</strong>
+                    <div>Midpoint: <InlineMath math="C_2 = \frac{1.5 + 3.0}{2} = 2.25" /></div>
+                    <div>Function Value: <InlineMath math="f(2.25) = (2.25)^2 - 4 = 5.0625 - 4 = +1.0625" /> (Positive)</div>
+                    <div>Update: Since <InlineMath math="f(1.5) < 0" /> and <InlineMath math="f(2.25) > 0" />, set right bound <InlineMath math="b = 2.25" />.</div>
+                    <div>New Interval: <InlineMath math="[1.5, 2.25]" /></div>
+                  </div>
+
+                  {/* Iteration 3 */}
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-300 dark:border-neutral-700 space-y-2 text-xs font-mono">
+                    <strong className="text-amber-600 dark:text-amber-400 block">Iteration 3:</strong>
+                    <div>Midpoint: <InlineMath math="C_3 = \frac{1.5 + 2.25}{2} = 1.875" /></div>
+                    <div>Function Value: <InlineMath math="f(1.875) = (1.875)^2 - 4 = 3.515625 - 4 = -0.484375" /> (Negative)</div>
+                    <div>Update: Since <InlineMath math="f(1.875) < 0" /> and <InlineMath math="f(2.25) > 0" />, set left bound <InlineMath math="a = 1.875" />.</div>
+                    <div>New Interval: <InlineMath math="[1.875, 2.25]" /></div>
+                  </div>
+
+                  {/* Iteration 4 */}
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-300 dark:border-neutral-700 space-y-2 text-xs font-mono">
+                    <strong className="text-amber-600 dark:text-amber-400 block">Iteration 4:</strong>
+                    <div>Midpoint: <InlineMath math="C_4 = \frac{1.875 + 2.25}{2} = 2.0625" /></div>
+                    <div>Function Value: <InlineMath math="f(2.0625) = (2.0625)^2 - 4 = +0.2539" /> (Positive)</div>
+                    <div>Update: Set <InlineMath math="b = 2.0625" />. New Interval: <InlineMath math="[1.875, 2.0625]" /></div>
+                  </div>
+                </div>
+
+                {/* Step 6: Summary Table */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 06</span> • <span>ITERATION SUMMARY TABLE</span>
+                  </div>
+                  <div className="overflow-x-auto rounded-xl border border-black/30 dark:border-neutral-700">
+                    <table className="w-full text-center text-xs font-mono border-collapse">
+                      <thead>
+                        <tr className="bg-neutral-200 dark:bg-neutral-900 text-black dark:text-white border-b border-black/30 dark:border-neutral-700 font-bold">
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Step (k)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Left Bound (a)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Right Bound (b)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Midpoint (C)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Value f(C)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Sign of f(C)</th>
+                          <th className="p-2.5">Next Interval</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {iterationData.map((row) => (
+                          <tr key={row.k} className="hover:bg-neutral-50 dark:hover:bg-neutral-900 border-t border-black/15 dark:border-neutral-700">
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold">{row.k}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.a}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.b}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold bg-[#FFE600]/20 dark:bg-amber-950/40">{row.c}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.fc}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.sign}</td>
+                            <td className="p-2.5 font-bold">{row.next}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Conclusion Box */}
+                <div className="border-2 border-black/80 dark:border-neutral-600 rounded-2xl p-6 relative overflow-hidden bg-[#FAF8F5] dark:bg-neutral-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none">
+                  <div className="absolute inset-0 pointer-events-none opacity-35 dark:opacity-40 editorial-dots-bg" />
+                  <div className="relative z-10 space-y-3">
+                    <span className="bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md uppercase">
+                      FINAL CONCLUSION
+                    </span>
+                    <h3 className="text-xl font-bold text-black dark:text-white">
+                      Exact Root Converged: x = 2
+                    </h3>
+                    <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
+                      <BlockMath math={`\\sqrt{4} = 2, \\quad f(2) = 2^2 - 4 = 0`} />
+                    </div>
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium leading-relaxed">
+                      The Bisection Method guarantees convergence as long as you start with points that bracket the root. Notice how the interval width <InlineMath math="|b - a|" /> cut in half at every single step (<InlineMath math="3 \to 1.5 \to 0.75 \to 0.375 \to 0.1875 \dots" />) until it dropped below the target error margin <InlineMath math="0.01" />, yielding our root estimate of <InlineMath math="x = 2.00" />!
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Interactive Calculator Section */}
+              <div className="pt-8 border-t-2 border-black/80 dark:border-neutral-700 space-y-6">
+                <div className="inline-block border border-black/60 dark:border-neutral-600 bg-black text-white dark:bg-white dark:text-black px-2.5 py-0.5 text-xs font-mono font-bold rounded-md uppercase mb-1">
+                  LABORATORY
+                </div>
+                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
+                  Interactive Live Calculator & Visualizer
+                </h2>
+                <BisectionMethod />
+              </div>
+
+              {/* Sequential Routing Navigation */}
+              <AlgorithmNavigation />
+
+            </section>
           </div>
-
-          {/* Overview */}
-          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-            The bisection method is a straightforward and reliable numerical technique used to find roots (solutions) of continuous functions. It works by repeatedly dividing an interval in half and selecting the subinterval where the function changes sign, thereby narrowing down the location of the root.
-          </p>
-
-          {/* Given a function */}
-          <div className="space-y-3">
-            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 text-center">Given a function:</p>
-            <div className="w-full md:w-[80%] mx-auto p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
-              <BlockMath math={`f(x) = 0`} />
-            </div>
-          </div>
-
-          {/* How the Bisection Method Works */}
-          <div className="pt-4 space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-neutral-700">
-              How the Bisection Method Works
-            </h2>
-            <ol className="list-decimal list-inside space-y-3 text-lg text-gray-700 dark:text-gray-300 pl-2">
-              <li className="leading-relaxed">
-                <strong>Select Interval:</strong> Choose two points <InlineMath math={`a`} /> and <InlineMath math={`b`} /> such that <InlineMath math={`f(a)`} /> and <InlineMath math={`f(b)`} /> have opposite signs.
-              </li>
-              <li className="leading-relaxed">
-                <strong>Midpoint Calculation:</strong> Compute the midpoint <InlineMath math="C = \frac{a + b}{2}" />.
-              </li>
-              <li className="leading-relaxed">
-                <strong>Evaluate:</strong> Check the sign of <InlineMath math={`f(c)`} />.
-              </li>
-              <li className="leading-relaxed">
-                <strong>Update Interval:</strong> If <InlineMath math={`f(c)`} /> is close enough to zero, <InlineMath math={`c`} /> is the root. Otherwise, update the interval.
-              </li>
-            </ol>
-          </div>
-
-          <hr className="my-8 border-gray-300 dark:border-neutral-700" />
-
-          {/* Example Section */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-neutral-700">
-              Example
-            </h2>
-
-            <div className="w-full md:w-[80%] mx-auto p-5 bg-emerald-50/60 dark:bg-neutral-900 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm space-y-2 text-center">
-              <p className="text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Given Function</p>
-              <BlockMath math={`x^2 = 4`} />
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 pt-1">Error Margin is 0.01</p>
-            </div>
-
-            {/* Step 1 */}
-            <div className="space-y-2 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 1: Rearranging the Equation</h3>
-              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center">
-                <BlockMath math={"f(x) = x^2 - 4 = 0"} />
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="space-y-3 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 2: Choose Initial Points</h3>
-              <p className="text-gray-700 dark:text-gray-300">To apply the Bisection Method, we first need to choose two initial points <InlineMath math="a" /> and <InlineMath math="b" /> such that:</p>
-              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center">
-                <BlockMath math="f(a) \text{ and } f(b) \text{ have opposite signs.}" />
-              </div>
-              <p className="text-gray-700 dark:text-gray-300">Let&apos;s choose <InlineMath math="a = 0 \text{ and } b = 3" />:</p>
-              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm space-y-2 text-center">
-                <BlockMath math="f(0) = 0^2 - 4 = -4 \text{ (negative)}" />
-                <BlockMath math="f(3) = 3^2 - 4 = 5 \text{ (positive)}" />
-              </div>
-              <p className="text-gray-700 dark:text-gray-300">Since <InlineMath math="f(0) < 0 \text{ and } f(3) > 0," /> we can proceed.</p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="space-y-2 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 3: Calculate Midpoint</h3>
-              <p className="text-gray-700 dark:text-gray-300">Next, we calculate the midpoint <InlineMath math={`C`} /> of the interval [ a , b ] :</p>
-              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center">
-                <BlockMath math="C = \frac{a + b}{2} = \frac{0 + 3}{2} = 1.5" />
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="space-y-2 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 4: Update the Interval</h3>
-              <p className="text-gray-700 dark:text-gray-300">Since <InlineMath math="f(a) < 0 \text{ and } f(C) < 0," /> we know that the root must lie in the interval [ C , b ] :</p>
-              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center">
-                <BlockMath math="\text{Set } a = C = 1.5" />
-              </div>
-            </div>
-
-            {/* Step 5 */}
-            <div className="space-y-3 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 5: Repeat the Process</h3>
-              <p className="text-gray-700 dark:text-gray-300">We repeat the steps:</p>
-              <ol className="list-decimal list-inside space-y-3 font-semibold text-gray-800 dark:text-gray-200 pl-2">
-                <li>
-                  Calculate new midpoint:
-                  <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm font-normal mt-1 text-center">
-                    <BlockMath math="C = \frac{1.5 + 3}{2} = 2.25" />
-                  </div>
-                </li>
-                <li>
-                  Evaluate function:
-                  <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm font-normal mt-1 text-center">
-                    <BlockMath math="f(2.25) = (2.25)^2 - 4 = 5.0625 - 4 = 1.0625" />
-                  </div>
-                </li>
-                <li>
-                  Update interval:
-                  <div className="font-normal text-gray-700 dark:text-gray-300 mt-1">
-                    <p>Since <InlineMath math="f(1.5) < 0 \text{ and } f(2.25) > 0" /> set <InlineMath math="b = C = 2.25" /></p>
-                  </div>
-                </li>
-              </ol>
-            </div>
-
-            {/* Step 6 */}
-            <div className="space-y-3 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 6: Continuing the Process</h3>
-              <p className="text-gray-700 dark:text-gray-300">Continuing this process, we narrow down the interval:</p>
-              <ol className="list-decimal list-inside space-y-3 font-semibold text-gray-800 dark:text-gray-200 pl-2">
-                <li>
-                  Calculate new midpoint:
-                  <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm font-normal mt-1 text-center">
-                    <BlockMath math="C = \frac{1.5 + 2.25}{2} = 1.875" />
-                  </div>
-                </li>
-                <li>
-                  Evaluate function:
-                  <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm font-normal mt-1 text-center">
-                    <BlockMath math="f(1.875) = (1.875)^2 - 4 = 3.515625 - 4 = -0.484375" />
-                  </div>
-                </li>
-                <li>
-                  Update interval:
-                  <div className="font-normal text-gray-700 dark:text-gray-300 mt-1">
-                    <p>Since <InlineMath math="f(1.875) < 0 \text{ and } f(2.25) > 0," /> set <InlineMath math="a = 2.25" /></p>
-                  </div>
-                </li>
-              </ol>
-            </div>
-
-            {/* Accuracy */}
-            <div className="space-y-2 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Continue until Desired Accuracy</h3>
-              <p className="text-gray-700 dark:text-gray-300">Continue this process until the difference between <InlineMath math="a" /> and <InlineMath math="b" /> is less than a desired tolerance (for example, 0.01).</p>
-              <p className="text-gray-700 dark:text-gray-300">Eventually, you will converge on the root:</p>
-              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm text-center">
-                <BlockMath math="\sqrt{4} = 2" />
-              </div>
-            </div>
-
-            {/* Conclusion Box */}
-            <div className="w-full md:w-[80%] mx-auto p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2 text-center">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Conclusion</h2>
-              <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                The Bisection Method is an efficient way to find the root of a function defined by a continuous equation. In this case, we demonstrated it for <InlineMath math={`x^2 = 4`} />&nbsp;
-                and found that the root is <InlineMath math={`x = 2`} />.&nbsp;
-                The method guarantees convergence as long as you start with points that bracket the root, making it a reliable technique for root-finding problems.
-              </p>
-            </div>
-          </div>
-
-          {/* Interactive Calculator Section */}
-          <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
-            <BisectionMethod />
-          </div>
-
-          {/* Sequential Routing Navigation */}
-          <AlgorithmNavigation />
-        </section>
-      </div>
-    </FullscreenToggle>
+        </div>
+      </FullscreenToggle>
+    </>
   );
 }

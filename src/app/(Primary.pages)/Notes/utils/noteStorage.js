@@ -98,6 +98,15 @@ export function deleteNote(id) {
   return filtered;
 }
 
+export function togglePinNote(id) {
+  const existing = getNotes();
+  const updated = existing.map((n) =>
+    n.id === id ? { ...n, isPinned: !n.isPinned } : n
+  );
+  saveNotes(updated);
+  return updated;
+}
+
 export function importNoteByKey(key) {
   const cleanKey = key.trim().toUpperCase();
   const existing = getNotes();

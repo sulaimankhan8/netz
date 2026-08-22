@@ -10,6 +10,7 @@ import {
   createNewNote, 
   saveSingleNote, 
   deleteNote, 
+  togglePinNote,
   importNoteByKey 
 } from './utils/noteStorage';
 
@@ -77,6 +78,11 @@ export default function NotesPage() {
     }
   };
 
+  const handleTogglePinNote = (id) => {
+    const updated = togglePinNote(id);
+    setNotes(updated);
+  };
+
   const handleImportByKey = (key) => {
     const imported = importNoteByKey(key);
     if (imported) {
@@ -135,9 +141,9 @@ export default function NotesPage() {
 
   if (!isLoaded) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-950 text-indigo-400 font-sans pl-0 md:pl-[78px]">
+      <div className="flex h-screen w-full items-center justify-center bg-white dark:bg-[#191919] text-neutral-800 dark:text-neutral-200 font-sans pl-0 md:pl-[78px]">
         <div className="animate-pulse flex items-center space-x-2 text-sm font-semibold">
-          <div className="w-4 h-4 rounded-full bg-indigo-500 animate-ping"></div>
+          <div className="w-4 h-4 rounded-full bg-neutral-400 dark:bg-neutral-600 animate-ping"></div>
           <span>Loading NETZ Notes Workspace...</span>
         </div>
       </div>
@@ -145,15 +151,17 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="relative flex flex-col md:flex-row h-screen max-h-screen w-full bg-slate-950 overflow-hidden font-sans pl-0 md:pl-[78px]">
+    <div className="relative flex flex-col md:flex-row h-screen max-h-screen w-full bg-white dark:bg-[#191919] text-neutral-900 dark:text-neutral-100 overflow-hidden font-sans pl-0 md:pl-[78px] transition-colors duration-200">
       <NoteSidebar
         notes={notes}
         activeNoteId={activeNoteId}
         onSelectNote={handleSelectNote}
         onCreateNote={handleCreateNote}
         onDeleteNote={handleDeleteNote}
+        onTogglePinNote={handleTogglePinNote}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
       <NoteEditor

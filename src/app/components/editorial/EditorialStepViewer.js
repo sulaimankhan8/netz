@@ -19,6 +19,7 @@ export default function EditorialStepViewer({
   finalAnswer = '',
   id = 'step-viewer-container',
   showExport = true,
+  learningMode = 'beginner',
 }) {
   const [inlineMode, setInlineMode] = useState(false);
   const [copied, setCopied] = useState(false);

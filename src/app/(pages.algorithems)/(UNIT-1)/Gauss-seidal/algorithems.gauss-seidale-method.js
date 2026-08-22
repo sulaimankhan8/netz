@@ -3,13 +3,13 @@
 import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
 import React, { useState } from 'react';
-import TButton from '../../../components/TButton';
 import Plot from './plot';
-import ExportToPNG from "@/app/utils/ExportToPNG";
-import Ad from "@/app/components/Ad";
-
+import { EditorialButton, EditorialExportButton } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiCheckCircle, FiTrendingUp, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const GaussSeidel = () => {
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
+
   const [showAd, setShowAd] = useState(false);
   const [count, setCount] = useState(0);
 
@@ -114,240 +114,290 @@ const GaussSeidel = () => {
     setVariableSequence([]);
   };
 
+  const exportData = results.map((res) => ({
+    Iteration: res.iteration,
+    x: res.x.toFixed(4),
+    y: res.y.toFixed(4),
+    z: res.z.toFixed(4),
+  }));
+
   return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
-      <div className="flex justify-between items-center mb-6 text-slate-900 dark:text-white">
-        <h1 className="text-2xl font-bold mb-4">Gauss-Seidel Method</h1>
+    <div className="w-full space-y-6">
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
+          <div>
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              LINEAR ALGEBRA SYSTEM SOLVER
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Gauss-Seidel Interactive Engine
+            </h3>
+          </div>
 
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? "opacity-50 cursor-not-allowed" : ""} hover:bg-purple-400`}
-          color="violet"
-          altText={demoInProgress ? "Demo Running..." : "Demo"}
-        />
-      </div>
-
-      {checkError && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-          {checkError}
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
+          </div>
         </div>
-      )}
 
+        {checkError && (
+          <div className="p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5 shrink-0" />
+            <span>{checkError}</span>
+          </div>
+        )}
 
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-xs font-mono font-bold uppercase text-black dark:text-white block">
+              System of 3 Equations (<InlineMath math="ax + by + cz = d" />)
+            </label>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <table className="w-full m-auto table-auto md:table-fixed p-4 shadow-md">
-          <thead>
-            <tr>
-              <th className="border border-gray-300 p-2">A Value</th>
-              <th className="border border-gray-300 p-2">B Value</th>
-              <th className="border border-gray-300 p-2">C Value</th>
-              <th className="border border-gray-300 p-2">Constants</th>
-            </tr>
-          </thead>
-          <tbody>
-            {equations.map((equation, index) => (
-              <tr key={index}>
-                <td className="border border-gray-300 p-2 col-span-2">
-                  <input
-                    type="number"
-                    placeholder="a"
-                    value={equation.a}
-                    onChange={(e) => handleInputChange(index, 'a', e.target.value)}
-                    required
-                    className="w-[50%] sm:my-5 sm:ml-5 text-black pr-1 dark:bg-neutral-800 dark:text-white border dark:border-gray-600 rounded-md hover:border hover:border-neutral-300 text-right"
-                  />
-                  <label className="ml-0 md:m-5 dark:text-white text-xl font-semibold">x</label>
-                </td>
-                <td className="border border-gray-300 sm:p-2">
-                  <input
-                    type="number"
-                    value={equation.b}
-                    onChange={(e) => handleInputChange(index, 'b', e.target.value)}
-                    placeholder="b"
-                    required
-                    className="w-[50%] sm:my-5 sm:ml-5 text-black border pr-1 dark:bg-neutral-800 dark:text-white dark:border-gray-600 rounded-md hover:border hover:border-neutral-300 text-right"
-                  />
-                  <label className="ml-0 md:m-5 dark:text-white text-xl font-semibold">y</label>
-                </td>
-                <td className="border border-gray-300 sm:p-2">
-                  <input
-                    type="number"
-                    value={equation.c}
-                    onChange={(e) => handleInputChange(index, 'c', e.target.value)}
-                    placeholder="c"
-                    required
-                    className="w-[50%] sm:my-5 sm:ml-5 text-black border pr-1 dark:bg-neutral-800 dark:text-white dark:border-gray-600 rounded-md hover:border hover:border-neutral-300 text-right"
-                  />
-                  <label className="ml-0 md:m-5 dark:text-white text-xl font-semibold">z</label>
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <label className="md:my-5 md:ml-5 dark:text-white text-2xl font-bold">=</label>
+            <div className="grid grid-cols-1 gap-3">
+              {equations.map((eq, index) => (
+                <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex flex-wrap items-center gap-3 font-mono text-sm">
+                  <span className="font-bold text-neutral-500">Eq {index + 1}:</span>
                   <input
                     type="number"
                     step="any"
-                    value={equation.constant}
-                    onChange={(e) => handleInputChange(index, 'constant', e.target.value)}
-                    placeholder="Constant"
-                    required
-                    className="w-[40%] p-2 text-black dark:bg-neutral-800  dark:text-white border dark:border-gray-600 rounded-md hover:border hover:border-neutral-300"
+                    value={eq.a}
+                    onChange={(e) => handleInputChange(index, 'a', e.target.value)}
+                    className="w-20 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg text-center font-bold"
                   />
-                </td>
-              </tr>
-
-            ))}
-            <tr>
-              <td className="border border-gray-300 p-5 text-xl text-center" colSpan="2">Error Margin</td>
-              <td className=" border border-gray-300 p-2" colSpan="2">
-                <input
-                  type="number"
-                  step="any"
-                  value={error}
-                  onChange={(e) => handleInputChangeError(e.target.value)}
-                  placeholder="0.0001"
-                  required
-                  className="w-[80%] p-2 text-black m-auto dark:bg-neutral-800 dark:text-white border dark:border-gray-600 rounded-md pr-1 hover:border hover:border-neutral-300"
-                />
-              </td>
-
-            </tr>
-          </tbody>
-        </table>
-
-
-
-
-
-        <div className="flex justify-between">
-          <button
-           onClick={handleButtonClick}
-            type="submit"
-            id="Calculate"
-            className="focus:outline-none focus:ring-2 focus:ring-offset-2 active:bg-opacity-80 text-white px-4 py-2 rounded hover:bg-green-400 bg-green-500 active:bg-green-700 focus:ring-green-700"
-          >
-            Calculate
-            <p>Count: {count}</p>
-          </button>
-         
-          {showAd && <Ad onClose={closeAd} />}
-
-          <TButton
-            tooltipText="Reset"
-            onClick={handleReset}
-            imgSrc="/reset.svg"
-            altText="Reset"
-            className="float-right"
-            color="red"
-            float="float-right"
-          />
-        </div>
-      </form>
-
-
-      {variableSequence.length > 0 && (
-        <div className="my-4 p-4 bg-blue-100 text-blue-700 dark:bg-neutral-600 dark:text-black rounded hover:border-gray-300 hover:border ">
-          <strong>Variable Sequence:</strong> {variableSequence.join(', ')}
-        </div>
-      )}
-
-      {results.length > 0 && (
-        <div className="mt-6 mx-auto dark:bg-neutral-600 p-8 rounded-2xl  hover:border hover:border-neutral-300">
-          <ExportToPNG 
-           elementId="graphCanvas"
-           fileName="graph.png"
-          tooltipText="Export&nbsp;Graph&nbsp;to&nbsp;PNG"
-          color="blue"
-          
-           altText="Export Graph" 
-          
-           float="float-right" />
-          <h2 className="text-xl font-semibold mb-2">Plot:</h2>
-          <Plot iterations={results} />
-        </div>
-      )}
-
-      {results.length > 0 && (<div>
-        
-
-
-        <div id="diffTable"  className="my-[3rem]  md:mx-[8rem] overflow-x-auto dark:bg-neutral-700">
-          <h2 className="text-xl inline-block font-semibold">Iteration Results:</h2>
-          <ExportToPNG 
-           elementId="diffTable"
-           fileName="table.png"
-          tooltipText="Export&nbsp;Table to&nbsp;PNG"
-          color="blue"
-           className="overflow-visible "
-           altText="Export Table" 
-          
-           float="float-right" />
-          
-          <table className="w-full table-auto">
-            <thead>
-              <tr>
-                <th className="border border-gray-300 p-2">Iteration</th>
-                <th className="border border-gray-300 p-2">x</th>
-                <th className="border border-gray-300 p-2">y</th>
-                <th className="border border-gray-300 p-2">z</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((result, index) => (
-                <tr key={index} className={index === results.length-1 ? 'bg-red-700':''}>
-                  <td className="border border-gray-300 p-2">{result.iteration}</td>
-                  <td className="border border-gray-300 p-2">{result.x.toFixed(4)}</td>
-                  <td className="border border-gray-300 p-2">{result.y.toFixed(4)}</td>
-                  <td className="border border-gray-300 p-2">{result.z.toFixed(4)}</td>
-                </tr>
+                  <span>x +</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={eq.b}
+                    onChange={(e) => handleInputChange(index, 'b', e.target.value)}
+                    className="w-20 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg text-center font-bold"
+                  />
+                  <span>y +</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={eq.c}
+                    onChange={(e) => handleInputChange(index, 'c', e.target.value)}
+                    className="w-20 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg text-center font-bold"
+                  />
+                  <span>z =</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={eq.constant}
+                    onChange={(e) => handleInputChange(index, 'constant', e.target.value)}
+                    className="w-24 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg text-center font-bold text-emerald-600 dark:text-emerald-400"
+                  />
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-        </div>)}
-        <div id="steps" className="mt-6 text-wrap dark:bg-neutral-700">
-      
-        <h2 className="text-xl font-semibold mb-2">Results:</h2>
-        <ExportToPNG 
-           elementId="steps"
-           fileName="steps.png"
-          tooltipText="Export&nbsp;Polynomial Steps&nbsp;to&nbsp;PNG" 
-          color="blue" 
-          altText="Export&nbsp;steps" 
-          className="" 
-          
-           float="float-right" />
-        
-        <div className="border p-4 rounded">
-          {iterationDetails.length && (
-            iterationDetails.map((step, index) => (
-              <div key={index} className="">
-                <h2 className="text-xl md:ml-10 overflow-x-auto">Iteration {`${index + 1}`}</h2><br />
+            </div>
+          </div>
 
-                <div className="text-center rounded-lg">
-                  <pre className="overflow-x-auto">
-                <BlockMath math={`${step}  \\newline`} />
-                  </pre>
-                </div>
-                <div className="text-center  rounded-lg">
-                  <pre className="overflow-x-auto">
-                  <BlockMath math={`${iterationDetails2[index]} `} />
-                  </pre>
-                </div>
-                <div className="text-center  rounded-lg">
-                  <pre className="overflow-x-auto">
-                  <BlockMath math={`${iterationDetails3[index]}`} />
-                  </pre>
-                </div>
-                <br />
-              </div>
-            ))
-          )}
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end pt-2">
+            <div className="sm:col-span-2 space-y-1.5">
+              <label htmlFor="errorMargin" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Tolerance / Error Margin (<InlineMath math="\epsilon" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                id="errorMargin"
+                value={error}
+                onChange={(e) => handleInputChangeError(e.target.value)}
+                placeholder="0.0001"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <EditorialButton
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-full"
+            >
+              <FiCheckCircle className="w-4 h-4 mr-2" /> Solve Vector System
+            </EditorialButton>
+          </div>
+        </form>
+
+        {variableSequence.length > 0 && (
+          <div className="p-4 border-2 border-black/30 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 rounded-xl font-mono text-xs text-black dark:text-white">
+            <strong className="uppercase text-neutral-500 block mb-1">Diagonally Dominant Variable Order:</strong>
+            {variableSequence.join(' &rarr; ')}
+          </div>
+        )}
+
+        {results.length > 0 && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Convergence Reached ({results.length} iterations)
+              </span>
+              <span className="text-base md:text-lg font-mono font-black">
+                x = {results[results.length - 1].x.toFixed(4)}, y = {results[results.length - 1].y.toFixed(4)}, z = {results[results.length - 1].z.toFixed(4)}
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Gauss Seidel Method Report"
+              elementId="gauss-seidel-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
+        )}
       </div>
 
+      {results.length > 0 && (
+        <div id="gauss-seidel-results-container" className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Vector Log
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> Substitution Steps
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('plot')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'plot'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiTrendingUp className="w-3.5 h-3.5" /> Convergence Curve
+              </button>
+            </div>
 
+            <EditorialExportButton
+              title="Gauss Seidel Method Report"
+              elementId="gauss-seidel-results-container"
+              exportData={exportData}
+              size="sm"
+            />
+          </div>
 
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Gauss-Seidel Vector Iteration Log
+              </h4>
+
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Iter</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">x</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">y</th>
+                      <th className="p-3">z</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.map((res, index) => (
+                      <tr
+                        key={index}
+                        className={
+                          index === results.length - 1
+                            ? 'bg-emerald-500 text-white font-bold'
+                            : index % 2 === 0
+                            ? 'bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white'
+                            : 'bg-white dark:bg-neutral-900 text-black dark:text-white'
+                        }
+                      >
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{res.iteration}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700 font-bold">{res.x.toFixed(4)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700 font-bold">{res.y.toFixed(4)}</td>
+                        <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{res.z.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'steps') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Component Updates
+              </h4>
+
+              <div className="space-y-3">
+                {iterationDetails.slice(0, 4).map((step, index) => (
+                  <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400">
+                      <span>Iteration {index + 1}</span>
+                      <span>Updated Variables</span>
+                    </div>
+                    <div className="overflow-x-auto text-center py-1 font-mono text-xs">
+                      <BlockMath math={`${step} \\quad , \\quad ${iterationDetails2[index]} \\quad , \\quad ${iterationDetails3[index]}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'plot') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Convergence Trajectory Plot
+              </h4>
+
+              <div id="graphCanvas" className="w-full">
+                <Plot iterations={results} />
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
     </div>
   );
 };

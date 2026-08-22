@@ -1,98 +1,265 @@
 'use client';
 
 import React from 'react';
+import Head from 'next/head';
 import { BlockMath, InlineMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
-import ThemeToggle from '@/app/components/ThemeToggle';
+import { EditorialThemeToggle } from '@/app/components/editorial';
 import FalsePositionMethod from './algorithems.false-positions-method';
 import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function FalsePositionMethods() {
+  const iterationData = [
+    { k: 1, a: '2.0000', b: '3.0000', c: '2.0588', fc: '-0.3869', sign: 'f(c) < 0', next: '[2.0588, 3.0000]' },
+    { k: 2, a: '2.0588', b: '3.0000', c: '2.0813', fc: '-0.1425', sign: 'f(c) < 0', next: '[2.0813, 3.0000]' },
+    { k: 3, a: '2.0813', b: '3.0000', c: '2.0895', fc: '-0.0516', sign: 'f(c) < 0', next: '[2.0895, 3.0000]' },
+    { k: 4, a: '2.0895', b: '3.0000', c: '2.0924', fc: '-0.0185', sign: 'f(c) < 0', next: '[2.0924, 3.0000]' },
+    { k: 5, a: '2.0924', b: '3.0000', c: '2.0935', fc: '-0.0066', sign: 'f(c) < 0', next: '[2.0935, 3.0000]' },
+  ];
+
   return (
-    <FullscreenToggle className="dark:bg-neutral-800 w-full min-h-screen">
-      <div className="md:ml-[80px]">
-        <section className="container mx-auto px-4 md:px-8 py-10 dark:bg-neutral-800 dark:text-white space-y-8">
-          
-          {/* Header */}
-          <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-neutral-700">
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-              False Position Method (Regula Falsi)
-            </h1>
-            <ThemeToggle />
-          </div>
+    <>
+      <Head>
+        <title>False Position Method (Regula Falsi) | Netz</title>
+        <meta name="description" content="Master the False Position Method (Regula Falsi) with gentle step-by-step guidance, formula derivations, and an interactive visualizer." />
+      </Head>
 
-          {/* Overview */}
-          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-            The False Position Method (or Regula Falsi) is a root-finding algorithm that combines features of the Bisection Method and the Secant Method. It approximates the root of a continuous function by drawing a secant line between two initial points with opposite signs.
-          </p>
+      <FullscreenToggle className="w-full min-h-screen">
+        <div className="w-full min-h-screen bg-[#FAF8F5] dark:bg-[#111111] text-black dark:text-white transition-colors editorial-grid-bg">
+          <div className="md:ml-[80px]">
+            <section className="container mx-auto px-4 md:px-8 py-10 space-y-10 max-w-6xl">
+              
+              {/* Header & Badges */}
+              <div className="space-y-4 pt-2">
+                <div className="flex justify-between items-start">
+                  <div className="inline-block border-2 border-black dark:border-white bg-[#FFE600] text-black px-3 py-0.5 text-xs font-mono font-black uppercase tracking-widest shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-md">
+                    UNIT 1 • FINDING ROOTS OF EQUATIONS
+                  </div>
+                  <EditorialThemeToggle />
+                </div>
 
-          {/* Formula Callout */}
-          <div className="space-y-3">
-            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 text-center">Formula for False Position Method:</p>
-            <div className="w-full md:w-[80%] mx-auto p-4 bg-blue-50/60 dark:bg-neutral-900 border-t-4 border-blue-600 dark:border-blue-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm overflow-x-auto text-center">
-              <BlockMath math={`c = \\frac{a \\cdot f(b) - b \\cdot f(a)}{f(b) - f(a)}`} />
-            </div>
-            <div className="space-y-2 text-lg text-gray-700 dark:text-gray-300 pl-4">
-              <p className="font-semibold">Where:</p>
-              <ul className="list-disc list-inside space-y-1 pl-2">
-                <li><InlineMath math="a" /> and <InlineMath math="b" /> are initial guesses such that <InlineMath math="f(a)" /> and <InlineMath math="f(b)" /> have opposite signs.</li>
-                <li><InlineMath math="c" /> is the x-intercept of the secant line joining <InlineMath math="(a, f(a))" /> and <InlineMath math="(b, f(b))" />.</li>
-              </ul>
-            </div>
-          </div>
+                <h1 className="text-3xl md:text-5xl font-black tracking-tight uppercase leading-tight text-black dark:text-white">
+                  False Position Method <br />
+                  <span className="underline decoration-4 underline-offset-8 decoration-black dark:decoration-white">Regula Falsi Strategy</span>
+                </h1>
 
-          <hr className="my-8 border-gray-300 dark:border-neutral-700" />
-
-          {/* Example Section */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-neutral-700">
-              Example
-            </h2>
-
-            <div className="w-full md:w-[80%] mx-auto p-5 bg-emerald-50/60 dark:bg-neutral-900 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm shadow-sm space-y-2 text-center">
-              <p className="text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Given Function</p>
-              <BlockMath math={`f(x) = x^3 - 2x - 5 = 0`} />
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 pt-1">Error Margin is 0.001</p>
-            </div>
-
-            {/* Step 1 */}
-            <div className="space-y-2 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 1: Choose Initial Points</h3>
-              <p className="text-gray-700 dark:text-gray-300">Choose <InlineMath math="a = 2" /> and <InlineMath math="b = 3" />:</p>
-              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm space-y-2 text-center">
-                <BlockMath math="f(2) = 2^3 - 2(2) - 5 = -1 \quad (\text{negative})" />
-                <BlockMath math="f(3) = 3^3 - 2(3) - 5 = 16 \quad (\text{positive})" />
+                <p className="text-base md:text-lg font-medium text-neutral-700 dark:text-neutral-300 max-w-3xl leading-relaxed">
+                  The <strong>False Position Method</strong> (Regula Falsi) improves upon the Bisection method by connecting boundary points <InlineMath math="(a, f(a))" /> and <InlineMath math="(b, f(b))" /> with a straight secant line. Instead of cutting blindly in the middle, it places the next guess right at the x-intercept of this secant line!
+                </p>
               </div>
-            </div>
 
-            {/* Step 2 */}
-            <div className="space-y-2 py-1">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Step 2: Calculate First Approximation</h3>
-              <div className="w-full md:w-[80%] mx-auto p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm space-y-2 text-center">
-                <BlockMath math="c_1 = \frac{2(16) - 3(-1)}{16 - (-1)} = \frac{32 + 3}{17} = \frac{35}{17} \approx 2.0588" />
-                <BlockMath math="f(2.0588) = (2.0588)^3 - 2(2.0588) - 5 \approx -0.3908" />
+              {/* Core Governing Formula Box */}
+              <div className="border-2 border-black/80 dark:border-neutral-600 bg-[#FAF8F5] dark:bg-neutral-900 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.12)]">
+                <div className="absolute inset-0 pointer-events-none opacity-35 dark:opacity-40 editorial-dots-bg" />
+                <div className="relative z-10 space-y-4">
+                  <div className="flex justify-between items-center border-b border-black/30 dark:border-neutral-700 pb-3">
+                    <span className="font-mono font-extrabold text-xs uppercase tracking-widest text-black dark:text-white">
+                      HOW REGULA FALSI WORKS
+                    </span>
+                    <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-bold text-xs px-2.5 py-0.5 rounded-md uppercase">
+                      SECANT INTERCEPT
+                    </span>
+                  </div>
+
+                  <div className="py-4 text-center overflow-x-auto">
+                    <BlockMath math={`C = \\frac{a \\cdot f(b) - b \\cdot f(a)}{f(b) - f(a)}`} />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs font-mono">
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">1. Pick Starting Bracket [a, b]</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Choose points where <InlineMath math="f(a)" /> and <InlineMath math="f(b)" /> have opposite signs.
+                      </span>
+                    </div>
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">2. Draw Secant Line (C)</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Find x-intercept <InlineMath math="C" /> where secant line crosses <InlineMath math="y=0" />.
+                      </span>
+                    </div>
+                    <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
+                      <strong className="text-black dark:text-white block font-bold">3. Update Bound & Repeat</strong>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Replace <InlineMath math="a" /> or <InlineMath math="b" /> with <InlineMath math="C" /> keeping root bracketed.
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Conclusion Box */}
-            <div className="w-full md:w-[80%] mx-auto p-6 bg-emerald-50/70 dark:bg-emerald-950/30 border-t-4 border-emerald-600 dark:border-emerald-500 border-x border-b border-gray-200 dark:border-neutral-700 rounded-b-xl rounded-t-sm space-y-2 text-center">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Conclusion</h2>
-              <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                By repeating the False Position formula, the root converges to <strong>2.0945</strong>.
-              </p>
-            </div>
+              {/* Step-by-Step Worked Example */}
+              <div className="space-y-6">
+                <div className="flex justify-between items-center pb-2 border-b-2 border-black/80 dark:border-neutral-700">
+                  <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
+                    Step-by-Step Worked Example
+                  </h2>
+                  <span className="text-xs font-mono font-bold bg-neutral-200 dark:bg-neutral-800 px-3 py-1 rounded-lg border border-black/40 dark:border-neutral-600">
+                    HAND-HOLDING TUTORIAL
+                  </span>
+                </div>
+
+                {/* Problem Statement Card */}
+                <div className="border-2 border-black/80 dark:border-neutral-600 rounded-2xl p-5 bg-emerald-50 dark:bg-emerald-950/40 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-emerald-600 text-white text-[10px] font-mono font-black px-2.5 py-0.5 rounded-md uppercase">
+                      OUR PROBLEM TO SOLVE
+                    </span>
+                  </div>
+                  <p className="text-sm md:text-base font-semibold text-emerald-950 dark:text-emerald-200">
+                    Find the real root of <InlineMath math="f(x) = x^3 - 2x - 5 = 0" /> in the interval <InlineMath math="[a, b] = [2, 3]" />.
+                  </p>
+                </div>
+
+                {/* Step 1 */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 01</span> • <span>INITIAL BRACKET EVALUATION</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Evaluate <InlineMath math="f(x)" /> at initial points <InlineMath math="a = 2" /> and <InlineMath math="b = 3" />:
+                  </p>
+                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math="f(2) = (2)^3 - 2(2) - 5 = 8 - 4 - 5 = -1 \quad (\text{Negative})" />
+                    <BlockMath math="f(3) = (3)^3 - 2(3) - 5 = 27 - 6 - 5 = +16 \quad (\text{Positive})" />
+                  </div>
+                  <p className="text-xs font-mono text-neutral-600 dark:text-neutral-400">
+                    Since <InlineMath math="f(2) < 0" /> and <InlineMath math="f(3) > 0" />, a root exists in <InlineMath math="[2, 3]" />.
+                  </p>
+                </div>
+
+                {/* Step 2 */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 02</span> • <span>COMPUTE FIRST INTERCEPT (C₁)</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Substitute values into the Regula Falsi secant formula:
+                  </p>
+                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math="C_1 = \frac{a \cdot f(b) - b \cdot f(a)}{f(b) - f(a)} = \frac{2(16) - 3(-1)}{16 - (-1)} = \frac{32 + 3}{17} = \frac{35}{17} \approx 2.0588" />
+                    <BlockMath math="f(2.0588) = (2.0588)^3 - 2(2.0588) - 5 = -0.3869 \quad (\text{Negative})" />
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 03</span> • <span>UPDATE INTERVAL BOUNDS</span>
+                  </div>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Since <InlineMath math="f(2.0588) < 0" /> and <InlineMath math="f(3) > 0" />, replace the old left bound <InlineMath math="a = 2" /> with <InlineMath math="a = 2.0588" />.
+                  </p>
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-xl font-mono text-xs text-center font-bold">
+                    New Search Bracket: <InlineMath math="[a, b] = [2.0588, 3.0000]" />
+                  </div>
+                </div>
+
+                {/* Step 4: Iterations Walkthrough */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 04</span> • <span>SUBSEQUENT ITERATIONS WALKTHROUGH</span>
+                  </div>
+
+                  {/* Iteration 2 */}
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-300 dark:border-neutral-700 space-y-2 text-xs font-mono">
+                    <strong className="text-amber-600 dark:text-amber-400 block">Iteration 2:</strong>
+                    <div>Secant Formula: <InlineMath math="C_2 = \frac{2.0588(16) - 3(-0.3869)}{16 - (-0.3869)} = \frac{34.1019}{16.3869} \approx 2.0813" /></div>
+                    <div>Function Evaluation: <InlineMath math="f(2.0813) = -0.1425" /> (Negative)</div>
+                    <div>Update: Set <InlineMath math="a = 2.0813" />. New bracket: <InlineMath math="[2.0813, 3.0000]" /></div>
+                  </div>
+
+                  {/* Iteration 3 */}
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-300 dark:border-neutral-700 space-y-2 text-xs font-mono">
+                    <strong className="text-amber-600 dark:text-amber-400 block">Iteration 3:</strong>
+                    <div>Secant Formula: <InlineMath math="C_3 = \frac{2.0813(16) - 3(-0.1425)}{16 - (-0.1425)} = \frac{33.728}{16.1425} \approx 2.0895" /></div>
+                    <div>Function Evaluation: <InlineMath math="f(2.0895) = -0.0516" /> (Negative)</div>
+                    <div>Update: Set <InlineMath math="a = 2.0895" />. New bracket: <InlineMath math="[2.0895, 3.0000]" /></div>
+                  </div>
+
+                  {/* Iteration 4 */}
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-300 dark:border-neutral-700 space-y-2 text-xs font-mono">
+                    <strong className="text-amber-600 dark:text-amber-400 block">Iteration 4:</strong>
+                    <div>Secant Formula: <InlineMath math="C_4 \approx 2.0924" />, <InlineMath math="f(2.0924) = -0.0185" /></div>
+                    <div>Update: Set <InlineMath math="a = 2.0924" />. New bracket: <InlineMath math="[2.0924, 3.0000]" /></div>
+                  </div>
+                </div>
+
+                {/* Step 5: Summary Table */}
+                <div className="border-2 border-black/80 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-800 p-5 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-neutral-500">
+                    <span>STEP 05</span> • <span>ITERATION SUMMARY TABLE</span>
+                  </div>
+                  <div className="overflow-x-auto rounded-xl border border-black/30 dark:border-neutral-700">
+                    <table className="w-full text-center text-xs font-mono border-collapse">
+                      <thead>
+                        <tr className="bg-neutral-200 dark:bg-neutral-900 text-black dark:text-white border-b border-black/30 dark:border-neutral-700 font-bold">
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Step (k)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Left Bound (a)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Right Bound (b)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Intercept (C)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Value f(C)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Sign of f(C)</th>
+                          <th className="p-2.5">Next Bracket</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {iterationData.map((row) => (
+                          <tr key={row.k} className="hover:bg-neutral-50 dark:hover:bg-neutral-900 border-t border-black/15 dark:border-neutral-700">
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold">{row.k}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.a}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.b}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold bg-[#FFE600]/20 dark:bg-amber-950/40">{row.c}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.fc}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.sign}</td>
+                            <td className="p-2.5 font-bold">{row.next}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Conclusion Box */}
+                <div className="border-2 border-black/80 dark:border-neutral-600 rounded-2xl p-6 relative overflow-hidden bg-[#FAF8F5] dark:bg-neutral-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none">
+                  <div className="absolute inset-0 pointer-events-none opacity-35 dark:opacity-40 editorial-dots-bg" />
+                  <div className="relative z-10 space-y-3">
+                    <span className="bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md uppercase">
+                      FINAL CONCLUSION
+                    </span>
+                    <h3 className="text-xl font-bold text-black dark:text-white">
+                      Approximated Root: x &approx; 2.0945
+                    </h3>
+                    <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
+                      <BlockMath math={`\\text{Exact Root } \\alpha \\approx 2.09455, \\quad f(2.09455) = 0`} />
+                    </div>
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium leading-relaxed">
+                      Iterating with the secant line intercept formula rapidly pulls the estimate toward the true root <strong>2.09455</strong> faster than standard bisection!
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Interactive Calculator Section */}
+              <div className="pt-8 border-t-2 border-black/80 dark:border-neutral-700 space-y-6">
+                <div className="inline-block border border-black/60 dark:border-neutral-600 bg-black text-white dark:bg-white dark:text-black px-2.5 py-0.5 text-xs font-mono font-bold rounded-md uppercase mb-1">
+                  LABORATORY
+                </div>
+                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
+                  Interactive Live Calculator & Visualizer
+                </h2>
+                <FalsePositionMethod />
+              </div>
+
+              {/* Sequential Routing Navigation */}
+              <AlgorithmNavigation />
+
+            </section>
           </div>
-
-          {/* Interactive Calculator Section */}
-          <div className="pt-8 border-t border-gray-300 dark:border-neutral-700">
-            <FalsePositionMethod />
-          </div>
-
-          {/* Sequential Routing Navigation */}
-          <AlgorithmNavigation />
-        </section>
-      </div>
-    </FullscreenToggle>
+        </div>
+      </FullscreenToggle>
+    </>
   );
-}
+}

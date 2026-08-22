@@ -3,15 +3,15 @@
 import React, { useState } from 'react';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
-import TButton from '../../../components/TButton';
 import UnifiedPlot from '@/app/components/UnifiedPlot';
-import ExportToPNG from "@/app/utils/ExportToPNG";
 import { evaluateMath, getSymbolicDerivative } from '@/app/utils/evaluateMath';
+import { EditorialButton, EditorialExportButton } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiCheckCircle, FiTrendingUp, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const NewtonRaphsonMethod = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
   const [expression, setExpression] = useState("x * x * x - 4 * x - 9");
-  const [initialGuess, setInitialGuess] = useState('');
+  const [initialGuess, setInitialGuess] = useState('2.5');
   const [tolerance, setTolerance] = useState(0.0001);
   const [result, setResult] = useState(null);
   const [tableResults, setTableResults] = useState([]);
@@ -19,6 +19,7 @@ const NewtonRaphsonMethod = () => {
   const [intervalSteps, setIntervalSteps] = useState([]);
   const [error, setError] = useState('');
   const [derivativeText, setDerivativeText] = useState('');
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
 
   const evaluateFunction = (fStr, xVal) => {
     try {
@@ -48,7 +49,7 @@ const NewtonRaphsonMethod = () => {
           return { interval: [x, x], steps };
         }
         if (fa * fx < 0) {
-          steps.push(`Sign change detected between x = ${a} and x = ${x}.`);
+          steps.push(`Sign change between x = ${a} and x = ${x}.`);
           return { interval: [a, x], steps };
         }
         a = x;
@@ -56,6 +57,7 @@ const NewtonRaphsonMethod = () => {
       }
     }
 
+    steps.push(`No interval found in positive direction. Searching negative direction.`);
     a = 0;
     fa = evaluateFunction(fStr, a);
     for (let x = a - step; x >= -maxRange; x -= step) {
@@ -66,126 +68,105 @@ const NewtonRaphsonMethod = () => {
         return { interval: [x, x], steps };
       }
       if (fa * fx < 0) {
-        steps.push(`Sign change detected between x = ${x} and x = ${a}.`);
+        steps.push(`Sign change between x = ${x} and x = ${a}.`);
         return { interval: [x, a], steps };
       }
       a = x;
       fa = fx;
     }
 
-    steps.push(`No valid sign-change interval found in [-${maxRange}, ${maxRange}].`);
+    steps.push(`No sign change interval found up to max range.`);
     return { interval: null, steps };
   };
 
-  const runNewtonRaphson = (exprStr, startX, tolVal, maxIterations = 100) => {
+  const handleCalculateRoot = (e) => {
+    e?.preventDefault();
     setError('');
-    let derivativeStr = '';
+    setResult(null);
+    setTableResults([]);
+    setStepDetails([]);
+    setIntervalSteps([]);
+
+    let dfStr = '';
     try {
-      derivativeStr = getSymbolicDerivative(exprStr, 'x');
-      setDerivativeText(derivativeStr);
+      dfStr = getSymbolicDerivative(expression);
+      setDerivativeText(dfStr);
     } catch {
-      setError('Could not calculate symbolic derivative for the entered function expression.');
+      setError("Failed to generate symbolic derivative. Please check expression syntax.");
       return;
     }
 
-    const f = (val) => evaluateFunction(exprStr, val);
-    const fPrime = (val) => evaluateFunction(derivativeStr, val);
+    let x0;
+    if (!initialGuess || initialGuess.trim() === '') {
+      const { interval, steps: searchSteps } = findInterval(expression);
+      setIntervalSteps(searchSteps);
+      if (!interval) {
+        setError("Could not auto-detect initial guess interval. Please provide x_0 manually.");
+        return;
+      }
+      x0 = (interval[0] + interval[1]) / 2;
+    } else {
+      x0 = parseFloat(initialGuess);
+      if (isNaN(x0)) {
+        setError("Invalid initial guess.");
+        return;
+      }
+    }
 
-    let currentX = startX;
-    let iter = 0;
-    const iterData = [];
-    const detailedSteps = [];
+    let currentX = x0;
+    const maxIter = 50;
+    const iterations = [];
+    const stepsLog = [];
+    let converged = false;
 
-    while (iter < maxIterations) {
-      iter++;
-      const fx = f(currentX);
-      const fpx = fPrime(currentX);
+    for (let i = 1; i <= maxIter; i++) {
+      const fx = evaluateFunction(expression, currentX);
+      const fpx = evaluateFunction(dfStr, currentX);
 
       if (fx === null || fpx === null) {
-        setError(`Math domain or calculation error at x = ${currentX}`);
-        break;
-      }
-
-      if (fpx === 0) {
-        setError(`Derivative f'(x) is 0 at x = ${currentX}. Iteration stopped to prevent division by zero.`);
-        break;
-      }
-
-      const nextX = currentX - (fx / fpx);
-
-      iterData.push({
-        iteration: iter,
-        x: currentX,
-        fx: fx,
-        fpx: fpx,
-        nextX: nextX,
-      });
-
-      detailedSteps.push({
-        iteration: iter,
-        x: currentX,
-        fx: fx,
-        fpx: fpx,
-        nextX: nextX,
-        derivativeStr: derivativeStr,
-      });
-
-      if (Math.abs(nextX - currentX) < tolVal || Math.abs(fx) < tolVal) {
-        setResult(`Root found at x = ${nextX.toFixed(6)} after ${iter} iterations (Tolerance: ${tolVal})`);
-        setTableResults(iterData);
-        setStepDetails(detailedSteps);
+        setError(`Evaluation error at iteration ${i}.`);
         return;
+      }
+
+      if (Math.abs(fpx) < 1e-12) {
+        setError(`Derivative near zero at x = ${currentX.toFixed(6)}. Method failed.`);
+        return;
+      }
+
+      const nextX = currentX - fx / fpx;
+
+      iterations.push({ iteration: i, x: currentX, fx, fpx, nextX });
+      stepsLog.push({ iteration: i, x: currentX, fx, fpx, nextX });
+
+      if (Math.abs(nextX - currentX) < tolerance || Math.abs(fx) < tolerance) {
+        converged = true;
+        setResult(`Newton-Raphson converged to root x = ${nextX.toFixed(6)} in ${i} iterations`);
+        break;
       }
 
       currentX = nextX;
     }
 
-    setResult(`Approximate root x = ${currentX.toFixed(6)} after ${iter} iterations.`);
-    setTableResults(iterData);
-    setStepDetails(detailedSteps);
-  };
-
-  const handleCalculateRoot = (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-
-    setResult(null);
-    setTableResults([]);
-    setStepDetails([]);
-    setIntervalSteps([]);
-    setError('');
-
-    let startX = parseFloat(initialGuess);
-
-    if (isNaN(startX)) {
-      const { interval, steps } = findInterval(expression);
-      setIntervalSteps(steps);
-
-      if (interval) {
-        startX = (interval[0] + interval[1]) / 2;
-      } else {
-        setError('No initial guess was provided and interval search could not find a sign change. Please enter an initial guess.');
-        return;
-      }
+    if (!converged) {
+      setResult(`Max iterations reached. Approximate root at x = ${currentX.toFixed(6)}`);
     }
 
-    runNewtonRaphson(expression, startX, tolerance);
+    setTableResults(iterations);
+    setStepDetails(stepsLog);
   };
 
-  const handleDemo = async () => {
+  const handleDemo = () => {
     setDemoInProgress(true);
     setExpression("x * x * x - 4 * x - 9");
-    setInitialGuess('');
+    setInitialGuess("2.5");
     setTolerance(0.0001);
-
-    setTimeout(() => {
-      handleCalculateRoot();
-      setDemoInProgress(false);
-    }, 150);
+    handleCalculateRoot();
+    setDemoInProgress(false);
   };
 
   const handleReset = () => {
     setExpression("x * x * x - 4 * x - 9");
-    setInitialGuess('');
+    setInitialGuess("2.5");
     setTolerance(0.0001);
     setResult(null);
     setTableResults([]);
@@ -195,203 +176,281 @@ const NewtonRaphsonMethod = () => {
     setDerivativeText('');
   };
 
-  return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:text-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 space-y-6">
-      <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
-        <h2 className="text-2xl font-bold">Newton-Raphson Method Solver</h2>
+  const exportData = tableResults.map((item) => ({
+    Iteration: item.iteration,
+    'x_n': item.x.toFixed(6),
+    'f(x_n)': item.fx.toFixed(6),
+    "f'(x_n)": item.fpx.toFixed(6),
+    'x_{n+1}': item.nextX.toFixed(6),
+  }));
 
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? "opacity-50 cursor-not-allowed" : ""} hover:bg-purple-400`}
-          color="violet"
-          altText="Demo"
-        />
+  return (
+    <div className="w-full space-y-6">
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
+          <div>
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              TANGENT SOLVER LABORATORY
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Newton-Raphson Interactive Engine
+            </h3>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
+          </div>
+        </div>
+
+        {error && (
+          <div className="p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleCalculateRoot} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="function" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Function Expression <InlineMath math="f(x)" />
+              </label>
+              <input
+                type="text"
+                id="function"
+                value={expression}
+                onChange={(e) => setExpression(e.target.value)}
+                placeholder="e.g., x^3 - 4*x - 9"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="initialGuess" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Initial Guess (<InlineMath math="x_0" />)
+              </label>
+              <input
+                type="number"
+                id="initialGuess"
+                step="any"
+                value={initialGuess}
+                onChange={(e) => setInitialGuess(e.target.value)}
+                placeholder="e.g. 2.5"
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="tolerance" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Tolerance (<InlineMath math="\epsilon" />)
+              </label>
+              <input
+                type="number"
+                id="tolerance"
+                step="0.00001"
+                value={tolerance}
+                onChange={(e) => setTolerance(parseFloat(e.target.value))}
+                placeholder="e.g., 0.0001"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <EditorialButton
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-full sm:w-auto"
+            >
+              <FiCheckCircle className="w-4 h-4 mr-2" /> Calculate Root
+            </EditorialButton>
+          </div>
+        </form>
+
+        {derivativeText && (
+          <div className="p-4 border border-black/30 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 rounded-xl font-mono text-xs text-black dark:text-white">
+            <strong className="uppercase text-neutral-500 block mb-1">Auto-Derived Derivative:</strong>
+            <InlineMath math={`f'(x) = ${derivativeText}`} />
+          </div>
+        )}
+
+        {result && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Convergence Reached ({tableResults.length} iterations)
+              </span>
+              <span className="text-base md:text-lg font-mono font-black">
+                {result}
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Newton Raphson Method Report"
+              elementId="newton-raphson-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 rounded-xl">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleCalculateRoot} className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="function" className="font-semibold block">
-            Enter Function <InlineMath math="f(x)" />:
-          </label>
-          <input
-            type="text"
-            id="function"
-            value={expression}
-            onChange={(e) => setExpression(e.target.value)}
-            placeholder="e.g., x * x * x - 4 * x - 9"
-            required
-            className="w-full p-3 border border-gray-300 dark:border-neutral-600 rounded-xl dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="initialGuess" className="font-semibold block">
-              Initial Guess <InlineMath math="x_0" /> (Optional):
-            </label>
-            <input
-              type="number"
-              id="initialGuess"
-              step="any"
-              value={initialGuess}
-              onChange={(e) => setInitialGuess(e.target.value)}
-              placeholder="Auto-detect if blank"
-              className="w-full p-3 border border-gray-300 dark:border-neutral-600 rounded-xl dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="tolerance" className="font-semibold block">
-              Enter Tolerance:
-            </label>
-            <input
-              type="number"
-              id="tolerance"
-              step="0.00001"
-              value={tolerance}
-              onChange={(e) => setTolerance(parseFloat(e.target.value))}
-              placeholder="e.g., 0.0001"
-              required
-              className="w-full p-3 border border-gray-300 dark:border-neutral-600 rounded-xl dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center pt-2">
-          <button
-            type="submit"
-            id="Calculate"
-            className="focus:outline-none focus:ring-2 focus:ring-offset-2 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-green-600 bg-green-500 active:bg-green-700 transition"
-          >
-            Calculate
-          </button>
-
-          <TButton
-            tooltipText="Reset"
-            onClick={handleReset}
-            imgSrc="/reset.svg"
-            altText="Reset"
-            color="red"
-          />
-        </div>
-      </form>
-
-      {derivativeText && (
-        <div className="p-4 bg-blue-50 dark:bg-neutral-900 text-blue-900 dark:text-blue-200 border border-blue-200 dark:border-neutral-700 rounded-xl">
-          <span className="font-semibold mr-2">Symbolic Derivative <InlineMath math="f'(x)" />:</span>
-          <InlineMath math={`f'(x) = ${derivativeText}`} />
-        </div>
-      )}
-
-      {intervalSteps.length > 0 && (
-        <div className="p-4 bg-amber-50 dark:bg-neutral-900 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-neutral-700 rounded-xl space-y-1">
-          <strong className="block mb-1">Interval Auto-Detection Steps:</strong>
-          {intervalSteps.map((stepMsg, idx) => (
-            <p key={idx} className="text-sm">{stepMsg}</p>
-          ))}
-        </div>
-      )}
-
-      {result && (
-        <div className="p-4 bg-emerald-50 dark:bg-neutral-900 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-neutral-700 rounded-xl font-semibold">
-          <strong>Result:</strong> {result}
-        </div>
-      )}
-
       {tableResults.length > 0 && (
-        <div className="w-full mx-auto dark:bg-neutral-900 p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Plot:</h2>
-            <ExportToPNG 
-              elementId="graphCanvas"
-              fileName="graphCanvas.png"
-              tooltipText="Export&nbsp;Plot&nbsp;to&nbsp;PNG"
-              color="blue"
-              altText="Export Plot" 
-            />
-          </div>
-          <UnifiedPlot 
-            iterations={tableResults} 
-            functionInput={expression}  
-          />
-        </div>
-      )}
+        <div id="newton-raphson-results-container" className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Iteration Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> Step Derivations
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('plot')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'plot'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiTrendingUp className="w-3.5 h-3.5" /> Tangent Plot
+              </button>
+            </div>
 
-      {tableResults.length > 0 && (
-        <div className="w-full mx-auto space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Newton-Raphson Method Iterations:</h2>
-            <ExportToPNG 
-              elementId="Table"
-              fileName="table.png"
-              tooltipText="Export&nbsp;Table&nbsp;to&nbsp;PNG"
-              color="blue"
-              altText="Export Table" 
+            <EditorialExportButton
+              title="Newton Raphson Method Report"
+              elementId="newton-raphson-results-container"
+              exportData={exportData}
+              size="sm"
             />
           </div>
-          <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-neutral-700">
-            <table id="Table" className="w-full table-auto border-collapse text-center">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-neutral-900">
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold">Iteration</th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold"><InlineMath math="x_n" /></th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold"><InlineMath math="f(x_n)" /></th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold"><InlineMath math="f'(x_n)" /></th>
-                  <th className="border border-gray-200 dark:border-neutral-700 p-3 font-semibold"><InlineMath math="x_{n+1}" /></th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableResults.map((item, index) => (
-                  <tr 
-                    key={index} 
-                    className={index === tableResults.length - 1 
-                      ? 'bg-emerald-600 text-white font-bold' 
-                      : (index % 2 === 0 ? 'bg-gray-50 dark:bg-neutral-800' : 'bg-white dark:bg-neutral-900')
-                    }
-                  >
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{item.iteration}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{item.x.toFixed(6)}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{item.fx.toFixed(6)}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{item.fpx.toFixed(6)}</td>
-                    <td className="border border-gray-200 dark:border-neutral-700 p-2.5">{item.nextX.toFixed(6)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
-      {stepDetails.length > 0 && (
-        <div className="w-full mx-auto text-wrap dark:bg-neutral-900 p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Detailed Steps:</h2>
-            <ExportToPNG 
-              elementId="steps"
-              fileName="steps.png"
-              tooltipText="Export&nbsp;Steps&nbsp;to&nbsp;PNG" 
-              color="blue" 
-              altText="Export Steps" 
-            />
-          </div>
-          <div id="steps" className="space-y-4">
-            {stepDetails.map((step, index) => (
-              <div key={index} className="p-4 bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl space-y-2">
-                <h3 className="text-lg font-semibold">Iteration {step.iteration}</h3>
-                <BlockMath math={`x_{${step.iteration - 1}} = ${step.x.toFixed(6)}`} />
-                <BlockMath math={`f(x_{${step.iteration - 1}}) = ${step.fx.toFixed(6)}`} />
-                <BlockMath math={`f'(x_{${step.iteration - 1}}) = ${step.fpx.toFixed(6)}`} />
-                <BlockMath math={`x_{${step.iteration}} = x_{${step.iteration - 1}} - \\frac{f(x_{${step.iteration - 1}})}{f'(x_{${step.iteration - 1}})} = ${step.x.toFixed(6)} - \\frac{${step.fx.toFixed(6)}}{${step.fpx.toFixed(6)}} = ${step.nextX.toFixed(6)}`} />
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Newton-Raphson Iteration Log
+              </h4>
+
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Iter</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">x_n</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">f(x_n)</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">f'(x_n)</th>
+                      <th className="p-3">x_{'{n+1}'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableResults.map((item, index) => (
+                      <tr
+                        key={index}
+                        className={
+                          index === tableResults.length - 1
+                            ? 'bg-emerald-500 text-white font-bold'
+                            : index % 2 === 0
+                            ? 'bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white'
+                            : 'bg-white dark:bg-neutral-900 text-black dark:text-white'
+                        }
+                      >
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{item.iteration}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{item.x.toFixed(6)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{item.fx.toFixed(6)}</td>
+                        <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{item.fpx.toFixed(6)}</td>
+                        <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{item.nextX.toFixed(6)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'steps') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Tangent Slopes
+              </h4>
+
+              <div className="space-y-3">
+                {stepDetails.slice(0, 5).map((step, index) => (
+                  <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400">
+                      <span>Iteration {step.iteration}</span>
+                      <span>Tangent Intersect</span>
+                    </div>
+                    <div className="overflow-x-auto text-center py-1">
+                      <BlockMath math={`x_{${step.iteration}} = ${step.x.toFixed(6)} - \\frac{${step.fx.toFixed(6)}}{${step.fpx.toFixed(6)}} = ${step.nextX.toFixed(6)}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'plot') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Tangent Intersect Plot
+              </h4>
+
+              <div id="graphCanvas" className="w-full">
+                <UnifiedPlot
+                  iterations={tableResults}
+                  functionInput={expression}
+                />
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

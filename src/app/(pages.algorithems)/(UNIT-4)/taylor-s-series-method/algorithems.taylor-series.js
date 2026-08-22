@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import TButton from '@/app/components/TButton';
-import ExportToPNG from '@/app/utils/ExportToPNG';
 import { parseUserFunction } from '@/app/utils/evaluateMath';
+import { EditorialButton, EditorialExportButton } from '@/app/components/editorial';
+import { FiPlay, FiRotateCcw, FiCheckCircle, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const TaylorSeriesSolver = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
@@ -17,6 +17,7 @@ const TaylorSeriesSolver = () => {
   const [result, setResult] = useState(null);
   const [gridLog, setGridLog] = useState([]);
   const [error, setError] = useState('');
+  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps'
 
   const calculateTaylor = (fExpr, xStartVal, yStartVal, targetVal) => {
     setError('');
@@ -31,8 +32,8 @@ const TaylorSeriesSolver = () => {
 
     const h = xTarget - xStart;
     const log = [];
-    log.push(`Initial Point (x0, y0) = (${xStart}, ${yStart})`);
-    log.push(`Evaluation Point x = ${xTarget}, Step Size h = x - x0 = ${h.toFixed(6)}`);
+    log.push(`Initial Condition: (x0, y0) = (${xStart}, ${yStart})`);
+    log.push(`Target Point x = ${xTarget}, Step Size h = x - x0 = ${h.toFixed(6)}`);
 
     let f;
     try {
@@ -50,11 +51,11 @@ const TaylorSeriesSolver = () => {
 
     const t1 = yStart;
     const t2 = h * y1_val;
-    const t3 = (Math.pow(h, 2) / 2) * y2_val;
-    const t4 = (Math.pow(h, 3) / 6) * y3_val;
-
+    const t3 = ((h * h) / 2) * y2_val;
+    const t4 = ((h * h * h) / 6) * y3_val;
     const approxY = t1 + t2 + t3 + t4;
 
+    setGridLog(log);
     setResult({
       h,
       y1_val,
@@ -64,13 +65,12 @@ const TaylorSeriesSolver = () => {
       t2,
       t3,
       t4,
-      approxY
+      approxY,
     });
-    setGridLog(log);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleCalculate = (e) => {
+    e?.preventDefault();
     calculateTaylor(functionInput, x0, y0, targetX);
   };
 
@@ -85,7 +85,7 @@ const TaylorSeriesSolver = () => {
   };
 
   const handleReset = () => {
-    setFunctionInput('');
+    setFunctionInput('x + y');
     setX0(0);
     setY0(1);
     setTargetX(0.2);
@@ -94,186 +94,261 @@ const TaylorSeriesSolver = () => {
     setError('');
   };
 
+  const exportData = result ? [
+    { Term: 'Order 0 (y0)', Formula: 'y0', Derivative: y0, Value: result.t1.toFixed(6) },
+    { Term: "Order 1 (y')", Formula: "h * y'(x0)", Derivative: result.y1_val.toFixed(6), Value: result.t2.toFixed(6) },
+    { Term: "Order 2 (y'')", Formula: "(h^2 / 2!) * y''(x0)", Derivative: result.y2_val.toFixed(6), Value: result.t3.toFixed(6) },
+    { Term: "Order 3 (y''')", Formula: "(h^3 / 3!) * y'''(x0)", Derivative: result.y3_val.toFixed(6), Value: result.t4.toFixed(6) },
+  ] : [];
+
   return (
-    <div className="w-full md:w-[80%] mx-auto p-6 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-gray-200 dark:border-neutral-700 text-slate-900 dark:text-white">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Taylor&apos;s Series ODE Solver</h1>
-        <TButton
-          tooltipText="Demo"
-          onClick={handleDemo}
-          className={`bg-purple-700 ${demoInProgress ? 'opacity-50 cursor-not-allowed' : ''} hover:bg-purple-600`}
-          color="violet"
-          altText="Demo"
-        />
-      </div>
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="function" className="block text-sm font-semibold mb-1">
-            Slope Function <InlineMath math="y' = f(x, y)" />:
-          </label>
-          <input
-            type="text"
-            id="function"
-            value={functionInput}
-            onChange={(e) => setFunctionInput(e.target.value)}
-            placeholder="e.g. x + y"
-            required
-            className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="w-full space-y-6">
+      <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-6">
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-black/10 dark:border-neutral-800">
           <div>
-            <label htmlFor="x0" className="block text-sm font-semibold mb-1">Initial <InlineMath math="x_0" />:</label>
-            <input
-              type="number"
-              id="x0"
-              step="any"
-              value={x0}
-              onChange={(e) => setX0(e.target.value)}
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+            <span className="text-xs font-mono font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              SERIES EXPANSION ODE LABORATORY
+            </span>
+            <h3 className="text-xl md:text-2xl font-black uppercase text-black dark:text-white">
+              Taylor Series Expansion Engine
+            </h3>
           </div>
 
-          <div>
-            <label htmlFor="y0" className="block text-sm font-semibold mb-1">Initial <InlineMath math="y_0" />:</label>
-            <input
-              type="number"
-              id="y0"
-              step="any"
-              value={y0}
-              onChange={(e) => setY0(e.target.value)}
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="targetX" className="block text-sm font-semibold mb-1">Target Point <InlineMath math="x" />:</label>
-            <input
-              type="number"
-              id="targetX"
-              step="any"
-              value={targetX}
-              onChange={(e) => setTargetX(e.target.value)}
-              required
-              className="w-full p-3 border dark:border-neutral-600 rounded-lg dark:bg-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+          <div className="flex items-center gap-2">
+            <EditorialButton
+              variant="secondary"
+              size="sm"
+              onClick={handleDemo}
+              disabled={demoInProgress}
+            >
+              <FiPlay className="w-3.5 h-3.5 mr-1" /> Quick Demo
+            </EditorialButton>
+            <EditorialButton
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+            >
+              <FiRotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+            </EditorialButton>
           </div>
         </div>
 
-        <div className="flex justify-between items-center pt-2">
-          <button
-            type="submit"
-            id="Calculate"
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg shadow-md transition-colors"
-          >
-            Calculate Taylor Approximation
-          </button>
-
-          <TButton
-            tooltipText="Reset"
-            onClick={handleReset}
-            imgSrc="/reset.svg"
-            altText="Reset"
-            color="red"
-            float="float-right"
-          />
-        </div>
-      </form>
-
-      {gridLog.length > 0 && (
-        <div className="my-6 p-4 bg-yellow-100 text-yellow-800 dark:bg-neutral-700 dark:text-yellow-200 rounded-xl space-y-1">
-          <strong>Taylor Expansion Log:</strong>
-          {gridLog.map((log, idx) => (
-            <p key={idx} className="font-mono text-sm">{log}</p>
-          ))}
-        </div>
-      )}
-
-      {result && (
-        <div className="my-4 p-4 bg-green-100 text-green-800 dark:bg-neutral-700 dark:text-green-200 rounded-xl font-bold text-lg flex items-center gap-2">
-          Final Taylor Approximation: <InlineMath math={`y(${targetX}) \\approx ${result.approxY.toFixed(6)}`} />
-        </div>
-      )}
-
-      {result && (
-        <div className="my-6 overflow-x-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Taylor Series Terms Breakdown:</h2>
-            <ExportToPNG
-              elementId="Table"
-              fileName="taylor_table.png"
-              tooltipText="Export Table to PNG"
-              color="blue"
-            />
+        {error && (
+          <div className="p-4 border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
           </div>
-          <table id="Table" className="w-full table-auto border-collapse border dark:border-neutral-600 text-left text-sm">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-neutral-700">
-                <th className="border p-3">Order Term</th>
-                <th className="border p-3">Formula</th>
-                <th className="border p-3">Derivative Value</th>
-                <th className="border p-3">Term Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border p-3 font-mono">Order 0 (y_0)</td>
-                <td className="border p-3 font-mono">y_0</td>
-                <td className="border p-3 font-mono">{y0}</td>
-                <td className="border p-3 font-mono">{result.t1.toFixed(6)}</td>
-              </tr>
-              <tr>
-                <td className="border p-3 font-mono">Order 1 (y&apos;)</td>
-                <td className="border p-3 font-mono">h * y&apos;(x_0)</td>
-                <td className="border p-3 font-mono">{result.y1_val.toFixed(6)}</td>
-                <td className="border p-3 font-mono">{result.t2.toFixed(6)}</td>
-              </tr>
-              <tr>
-                <td className="border p-3 font-mono">Order 2 (y&apos;&apos;)</td>
-                <td className="border p-3 font-mono">(h^2 / 2!) * y&apos;&apos;(x_0)</td>
-                <td className="border p-3 font-mono">{result.y2_val.toFixed(6)}</td>
-                <td className="border p-3 font-mono">{result.t3.toFixed(6)}</td>
-              </tr>
-              <tr>
-                <td className="border p-3 font-mono">Order 3 (y&apos;&apos;&apos;)</td>
-                <td className="border p-3 font-mono">(h^3 / 3!) * y&apos;&apos;&apos;(x_0)</td>
-                <td className="border p-3 font-mono">{result.y3_val.toFixed(6)}</td>
-                <td className="border p-3 font-mono">{result.t4.toFixed(6)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+        )}
 
-      {result && (
-        <div className="mt-6 p-6 dark:bg-neutral-700 rounded-2xl border border-gray-200 dark:border-neutral-600 space-y-4">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-semibold">Detailed KaTeX Expansion Substitution:</h2>
-            <ExportToPNG
-              elementId="steps"
-              fileName="taylor_steps.png"
-              tooltipText="Export Steps to PNG"
-              color="blue"
-            />
-          </div>
-          <div id="steps" className="space-y-4 font-mono">
-            <div className="p-4 bg-indigo-50 dark:bg-neutral-900 rounded-xl border border-indigo-300 dark:border-indigo-700">
-              <h3 className="text-lg font-bold text-indigo-800 dark:text-indigo-300 mb-2">Taylor Series Expansion Formula</h3>
-              <BlockMath math={`y(x_0 + h) = y(x_0) + h \\cdot y'(x_0) + \\frac{h^2}{2!} y''(x_0) + \\frac{h^3}{3!} y'''(x_0)`} />
-              <BlockMath math={`y(${targetX}) = ${result.t1.toFixed(6)} + ${result.t2.toFixed(6)} + ${result.t3.toFixed(6)} + ${result.t4.toFixed(6)}`} />
-              <BlockMath math={`y(${targetX}) \\approx ${result.approxY.toFixed(6)}`} />
+        <form onSubmit={handleCalculate} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="function" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Derivative Expression <InlineMath math="f(x, y) = \frac{dy}{dx}" />
+              </label>
+              <input
+                type="text"
+                id="function"
+                value={functionInput}
+                onChange={(e) => setFunctionInput(e.target.value)}
+                placeholder="e.g., x + y"
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="targetX" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Target Evaluation Point (<InlineMath math="x_{target}" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                id="targetX"
+                value={targetX}
+                onChange={(e) => setTargetX(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="x0" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Initial Condition (<InlineMath math="x_0" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                id="x0"
+                value={x0}
+                onChange={(e) => setX0(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="y0" className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                Initial Value (<InlineMath math="y_0" />)
+              </label>
+              <input
+                type="number"
+                step="any"
+                id="y0"
+                value={y0}
+                onChange={(e) => setY0(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-black/80 dark:border-neutral-700 rounded-xl font-mono text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+              />
+            </div>
+          </div>
+
+          <EditorialButton
+            type="submit"
+            variant="primary"
+            size="md"
+            className="w-full"
+          >
+            <FiCheckCircle className="w-4 h-4 mr-2" /> Expand & Calculate
+          </EditorialButton>
+        </form>
+
+        {result && (
+          <div className="p-5 border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 rounded-xl flex items-center justify-between flex-wrap gap-4 shadow-[2px_2px_0px_0px_rgba(16,185,129,0.3)]">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase block text-emerald-700 dark:text-emerald-400">
+                Taylor Series Approximation Result
+              </span>
+              <span className="text-base md:text-lg font-mono font-black">
+                y({targetX}) &approx; {result.approxY.toFixed(6)}
+              </span>
+            </div>
+
+            <EditorialExportButton
+              title="Taylor Series Report"
+              elementId="taylor-results-container"
+              exportData={exportData}
+              variant="accent"
+              size="sm"
+            />
+          </div>
+        )}
+      </div>
+
+      {result && (
+        <div id="taylor-results-container" className="space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-black dark:border-neutral-700 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewTab('all')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all ${
+                  viewTab === 'all'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                All Views
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'table'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiList className="w-3.5 h-3.5" /> Series Terms Breakdown
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('steps')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 ${
+                  viewTab === 'steps'
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300'
+                }`}
+              >
+                <FiLayers className="w-3.5 h-3.5" /> KaTeX Formula Derivation
+              </button>
+            </div>
+
+            <EditorialExportButton
+              title="Taylor Series Report"
+              elementId="taylor-results-container"
+              exportData={exportData}
+              size="sm"
+            />
+          </div>
+
+          {(viewTab === 'all' || viewTab === 'table') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiList className="w-5 h-5 text-neutral-500" /> Series Terms Expansion Breakdown
+              </h4>
+
+              <div className="overflow-x-auto rounded-xl border-2 border-black/80 dark:border-neutral-700">
+                <table className="w-full table-auto border-collapse text-center text-xs md:text-sm font-mono">
+                  <thead>
+                    <tr className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Order Term</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Formula</th>
+                      <th className="p-3 border-r border-neutral-700 dark:border-neutral-300">Derivative Value</th>
+                      <th className="p-3">Term Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white">
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">Order 0 (y_0)</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">y_0</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{y0}</td>
+                      <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{result.t1.toFixed(6)}</td>
+                    </tr>
+                    <tr className="bg-white dark:bg-neutral-900 text-black dark:text-white">
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">Order 1 (y&apos;)</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">h &middot; y&apos;(x_0)</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{result.y1_val.toFixed(6)}</td>
+                      <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{result.t2.toFixed(6)}</td>
+                    </tr>
+                    <tr className="bg-neutral-50 dark:bg-neutral-800/80 text-black dark:text-white">
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">Order 2 (y&apos;&apos;)</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">(h^2 / 2!) &middot; y&apos;&apos;(x_0)</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{result.y2_val.toFixed(6)}</td>
+                      <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{result.t3.toFixed(6)}</td>
+                    </tr>
+                    <tr className="bg-white dark:bg-neutral-900 text-black dark:text-white">
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">Order 3 (y&apos;&apos;&apos;)</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">(h^3 / 3!) &middot; y&apos;&apos;&apos;(x_0)</td>
+                      <td className="p-3 border-t border-r border-neutral-200 dark:border-neutral-700">{result.y3_val.toFixed(6)}</td>
+                      <td className="p-3 border-t border-neutral-200 dark:border-neutral-700 font-bold">{result.t4.toFixed(6)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {(viewTab === 'all' || viewTab === 'steps') && (
+            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                <FiLayers className="w-5 h-5 text-neutral-500" /> Taylor Expansion Formula Substitution
+              </h4>
+
+              <div className="p-4 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-3 font-mono text-xs">
+                <div className="space-y-1">
+                  <span className="font-bold text-neutral-500 uppercase block">Expansion Formula:</span>
+                  <BlockMath math={`y(x_0 + h) = y(x_0) + h \\cdot y'(x_0) + \\frac{h^2}{2!} y''(x_0) + \\frac{h^3}{3!} y'''(x_0)`} />
+                  <BlockMath math={`y(${targetX}) = ${result.t1.toFixed(6)} + ${result.t2.toFixed(6)} + ${result.t3.toFixed(6)} + ${result.t4.toFixed(6)}`} />
+                  <BlockMath math={`y(${targetX}) \\approx ${result.approxY.toFixed(6)}`} />
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>
