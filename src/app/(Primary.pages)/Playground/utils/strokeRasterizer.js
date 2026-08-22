@@ -1,14 +1,16 @@
 /**
- * Stroke Rasterizer — Converts InkStroke arrays into bitmap PNG images
- * for submission to OCR/Vision API recognition engines.
+ * Stroke Rasterizer — Converts InkStroke arrays into optimized bitmap PNG images
+ * for Tesseract.js OCR engine.
  *
- * Renders stroke points as black lines on a white background with proper
- * line widths, coordinate normalization, and padding.
+ * Optimizations for handwriting accuracy:
+ * - Upscales small strokes to an optimal character height (~180px - 240px)
+ * - Renders thicker anti-aliased strokes (6-10px) with round caps/joins
+ * - Adds generous margins so character boundaries aren't clipped
  */
 
-const RASTER_PADDING = 24;
-const RASTER_MIN_SIZE = 64;
-const RASTER_MAX_SIZE = 1024;
+const TARGET_MIN_HEIGHT = 160;
+const TARGET_MAX_HEIGHT = 400;
+const RASTER_PADDING = 32;
 const RASTER_STROKE_COLOR = '#000000';
 const RASTER_BG_COLOR = '#FFFFFF';
 
@@ -17,33 +19,33 @@ const RASTER_BG_COLOR = '#FFFFFF';
  *
  * @param {Array} strokes - Array of InkStroke objects with .points[], .width, .color
  * @param {Object} bbox - Bounding box { minX, minY, maxX, maxY } of the cluster
- * @param {Object} options - Optional overrides: { padding, maxSize, strokeScale }
+ * @param {Object} options - Optional overrides: { padding, targetHeight }
  * @returns {{ dataUrl: string, width: number, height: number }} Rasterized image result
  */
 export function rasterizeStrokesToDataUrl(strokes, bbox, options = {}) {
   const padding = options.padding ?? RASTER_PADDING;
-  const maxSize = options.maxSize ?? RASTER_MAX_SIZE;
-  const strokeScale = options.strokeScale ?? 1.0;
 
   if (!strokes || strokes.length === 0 || !bbox) {
     return null;
   }
 
-  // Calculate cluster dimensions
-  const rawWidth = bbox.maxX - bbox.minX;
-  const rawHeight = bbox.maxY - bbox.minY;
+  // Calculate raw cluster dimensions
+  const rawWidth = Math.max(bbox.maxX - bbox.minX, 20);
+  const rawHeight = Math.max(bbox.maxY - bbox.minY, 20);
 
-  // Add padding
-  let canvasWidth = Math.max(rawWidth + padding * 2, RASTER_MIN_SIZE);
-  let canvasHeight = Math.max(rawHeight + padding * 2, RASTER_MIN_SIZE);
-
-  // Scale down if exceeding max size while preserving aspect ratio
+  // Calculate scaling factor so handwriting is at optimal OCR resolution (height ~180-240px)
   let scale = 1.0;
-  if (canvasWidth > maxSize || canvasHeight > maxSize) {
-    scale = maxSize / Math.max(canvasWidth, canvasHeight);
-    canvasWidth = Math.round(canvasWidth * scale);
-    canvasHeight = Math.round(canvasHeight * scale);
+  if (rawHeight < TARGET_MIN_HEIGHT) {
+    scale = Math.min(TARGET_MIN_HEIGHT / rawHeight, 3.5);
+  } else if (rawHeight > TARGET_MAX_HEIGHT) {
+    scale = TARGET_MAX_HEIGHT / rawHeight;
   }
+
+  const scaledWidth = Math.round(rawWidth * scale);
+  const scaledHeight = Math.round(rawHeight * scale);
+
+  const canvasWidth = scaledWidth + padding * 2;
+  const canvasHeight = scaledHeight + padding * 2;
 
   // Create canvas
   let canvas;
@@ -58,30 +60,44 @@ export function rasterizeStrokesToDataUrl(strokes, bbox, options = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Fill white background
+  // Fill crisp white background
   ctx.fillStyle = RASTER_BG_COLOR;
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  // Draw each stroke as black lines
+  // Set high quality smoothing
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  // Draw each stroke as bold black lines
   for (let i = 0; i < strokes.length; i++) {
     const stroke = strokes[i];
     const points = stroke.points;
-    if (!points || points.length < 2) continue;
+    if (!points || points.length === 0) continue;
 
     ctx.beginPath();
     ctx.strokeStyle = RASTER_STROKE_COLOR;
-    ctx.lineWidth = Math.max(2, (stroke.width || 3) * strokeScale * scale);
+    // Thicken stroke for OCR recognition (optimal 6-8px on scaled canvas)
+    ctx.lineWidth = Math.max(5, (stroke.width || 3) * scale * 1.3);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Translate points: subtract bbox origin, add padding, apply scale
-    const x0 = (points[0].x - bbox.minX + padding) * scale;
-    const y0 = (points[0].y - bbox.minY + padding) * scale;
+    if (points.length === 1) {
+      // Single point dot (e.g. dot on 'i' or period '.')
+      const ptX = (points[0].x - bbox.minX) * scale + padding;
+      const ptY = (points[0].y - bbox.minY) * scale + padding;
+      ctx.arc(ptX, ptY, ctx.lineWidth / 2, 0, Math.PI * 2);
+      ctx.fillStyle = RASTER_STROKE_COLOR;
+      ctx.fill();
+      continue;
+    }
+
+    const x0 = (points[0].x - bbox.minX) * scale + padding;
+    const y0 = (points[0].y - bbox.minY) * scale + padding;
     ctx.moveTo(x0, y0);
 
     for (let j = 1; j < points.length; j++) {
-      const x = (points[j].x - bbox.minX + padding) * scale;
-      const y = (points[j].y - bbox.minY + padding) * scale;
+      const x = (points[j].x - bbox.minX) * scale + padding;
+      const y = (points[j].y - bbox.minY) * scale + padding;
       ctx.lineTo(x, y);
     }
 
@@ -90,8 +106,6 @@ export function rasterizeStrokesToDataUrl(strokes, bbox, options = {}) {
 
   // Export to base64 data URL
   if (canvas instanceof OffscreenCanvas) {
-    // OffscreenCanvas doesn't have toDataURL, convert synchronously via transferToImageBitmap
-    // Fallback: use a regular canvas to extract
     const exportCanvas = document.createElement('canvas');
     exportCanvas.width = canvasWidth;
     exportCanvas.height = canvasHeight;
@@ -112,11 +126,7 @@ export function rasterizeStrokesToDataUrl(strokes, bbox, options = {}) {
 }
 
 /**
- * Extracts just the base64 payload from a data URL (strips the data:image/png;base64, prefix).
- * Required by Gemini Vision API which expects raw base64 without the data URL prefix.
- *
- * @param {string} dataUrl - Full data URL string
- * @returns {string} Raw base64 string
+ * Extracts raw base64 payload from data URL
  */
 export function extractBase64FromDataUrl(dataUrl) {
   if (!dataUrl) return '';

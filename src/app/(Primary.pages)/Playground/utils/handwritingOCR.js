@@ -151,8 +151,8 @@ export async function processClusterOCR(cluster, options = {}) {
     const base64Image = extractBase64FromDataUrl(rasterResult.dataUrl);
     const mode = classifyClusterMode(cluster);
 
-    // Step 3: Run recognition via local Tesseract.js WASM engine (zero API cost, offline)
-    const recognition = await recognizeHandwriting(base64Image, mode, controller.signal);
+    // Step 3: Run recognition (Digital Ink vector engine with offline WASM fallback)
+    const recognition = await recognizeHandwriting(base64Image, mode, controller.signal, { strokes, bbox });
 
     if (controller.signal.aborted) return null;
 
