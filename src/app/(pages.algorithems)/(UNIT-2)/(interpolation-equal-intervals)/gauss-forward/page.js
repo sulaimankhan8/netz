@@ -226,9 +226,10 @@ export default function GaussForwardInterpolations() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting values (<InlineMath math="p = 0.5, y_0 = 20.225, \Delta y_0 = -1.581, \Delta^2 y_{-1} = 0.237, \Delta^3 y_{-1} = -0.038" />):
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math={`P(3.75) = 20.225 + (0.5)(-1.581) + \\frac{(0.5)(-0.5)}{2}(0.237) + \\frac{(1.5)(0.5)(-0.5)}{6}(-0.038)`} />
-                    <BlockMath math={`P(3.75) = 20.225 - 0.7905 - 0.029625 + 0.002375 = 19.4072`} />
+                    <BlockMath math={`P(3.75) = 20.22500 - 0.79050 - 0.02963 + 0.00238`} />
+                    <BlockMath math={`P(3.75) = 19.40725`} />
                   </div>
                 </div>
 

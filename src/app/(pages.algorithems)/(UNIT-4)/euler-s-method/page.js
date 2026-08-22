@@ -124,7 +124,7 @@ export default function EulerMethodPage() {
                   </p>
                   <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math="f(x_0, y_0) = 0 + 1 = 1.0" />
-                    <BlockMath math="y_1 = y_0 + h \\cdot f(x_0, y_0) = 1.0 + (0.1)(1.0) = 1.1000" />
+                    <BlockMath math="y_1 = y_0 + h \cdot f(x_0, y_0) = 1.0 + (0.1)(1.0) = 1.1000" />
                   </div>
                 </div>
 
@@ -138,7 +138,7 @@ export default function EulerMethodPage() {
                   </p>
                   <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math="f(x_1, y_1) = 0.1 + 1.1 = 1.2" />
-                    <BlockMath math="y_2 = y_1 + h \\cdot f(x_1, y_1) = 1.1 + (0.1)(1.2) = 1.2200" />
+                    <BlockMath math="y_2 = y_1 + h \cdot f(x_1, y_1) = 1.1 + (0.1)(1.2) = 1.2200" />
                   </div>
                 </div>
 

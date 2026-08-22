@@ -204,9 +204,10 @@ export default function WeddleRulePage() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting values:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
-                    <BlockMath math={`I = \\frac{3(1.0)}{10} \\left[ 1.00000 + 5(0.50000) + 0.20000 + 6(0.10000) + 0.05882 + 5(0.03846) + 0.02703 \\right]`} />
-                    <BlockMath math={`I = 0.3 \\left[ 1.00000 + 2.50000 + 0.20000 + 0.60000 + 0.05882 + 0.19230 + 0.02703 \\right] = 0.3 (4.57815) \\approx 1.37345`} />
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`I = \\frac{3(1.0)}{10} \\left[ 1.0 + 5(0.5) + 0.2 + 6(0.1) + 0.05882 + 5(0.03846) + 0.02703 \\right]`} />
+                    <BlockMath math={`I = 0.30000 \\left[ 1.00000 + 2.50000 + 0.20000 + 0.60000 + 0.05882 + 0.19230 + 0.02703 \\right]`} />
+                    <BlockMath math={`I = 0.30000 (4.57815) = 1.37345`} />
                   </div>
                 </div>
 
@@ -218,7 +219,7 @@ export default function WeddleRulePage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Integral: I &approx; 1.3735
+                      Approximated Integral: I ≈ 1.3735
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{\\int_0^6 \\frac{1}{1+x^2} dx \\approx 1.3735} \\quad (\\text{Exact: } \\arctan(6) \\approx 1.4056)`} />

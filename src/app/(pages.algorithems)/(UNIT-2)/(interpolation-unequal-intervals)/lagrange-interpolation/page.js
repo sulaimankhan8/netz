@@ -162,9 +162,10 @@ export default function LagrangeInterpolationPage() {
                   <p className="text-sm text-neutral-700 dark:text-neutral-300">
                     Multiply each basis weight by its corresponding <InlineMath math="y_i" /> value:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math={`P(10) = 12\\left(\\frac{1}{6}\\right) + 13\\left(-\\frac{1}{3}\\right) + 14\\left(\\frac{5}{6}\\right) + 16\\left(\\frac{1}{3}\\right)`} />
-                    <BlockMath math={`P(10) = 2 - \\frac{13}{3} + \\frac{70}{6} + \\frac{16}{3} = 3 + 11.6667 = 14.6667`} />
+                    <BlockMath math={`P(10) = 2.00000 - 4.33333 + 11.66667 + 5.33333`} />
+                    <BlockMath math={`P(10) = 14.66667 = \\frac{44}{3}`} />
                   </div>
                 </div>
 
@@ -176,7 +177,7 @@ export default function LagrangeInterpolationPage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Interpolated Value at x = 10: P(10) &approx; 14.6667
+                      Interpolated Value at x = 10: P(10) ≈ 14.6667
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{P(10) = 14.6667 = \\frac{44}{3}}`} />

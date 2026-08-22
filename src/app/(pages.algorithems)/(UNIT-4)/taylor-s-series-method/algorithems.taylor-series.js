@@ -223,7 +223,7 @@ const TaylorSeriesSolver = () => {
                 Taylor Series Approximation Result
               </span>
               <span className="text-base md:text-lg font-mono font-black">
-                y({targetX}) &approx; {result.approxY.toFixed(6)}
+                y({targetX}) ≈ {result.approxY.toFixed(6)}
               </span>
             </div>
 

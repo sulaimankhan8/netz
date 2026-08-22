@@ -138,9 +138,11 @@ export default function TaylorSeriesMethodPage() {
                   <p className="text-sm text-neutral-700 dark:text-neutral-300">
                     Plug derivatives into Taylor series formula for <InlineMath math="h = 0.1" />:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
-                    <BlockMath math={`y(0.1) = 1 + (0.1)(1) + \\frac{(0.1)^2}{2!}(2) + \\frac{(0.1)^3}{3!}(2) + \\frac{(0.1)^4}{4!}(2)`} />
-                    <BlockMath math={`y(0.1) = 1 + 0.1 + 0.01 + 0.0003333 + 0.0000083 = 1.11034`} />
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`y(0.1) = y_0 + h y'_0 + \\frac{h^2}{2!} y''_0 + \\frac{h^3}{3!} y'''_0 + \\frac{h^4}{4!} y^{(4)}_0`} />
+                    <BlockMath math={`y(0.1) = 1.00000 + (0.1)(1) + \\frac{(0.1)^2}{2}(2) + \\frac{(0.1)^3}{6}(2) + \\frac{(0.1)^4}{24}(2)`} />
+                    <BlockMath math={`y(0.1) = 1.00000 + 0.10000 + 0.01000 + 0.000333 + 0.000008`} />
+                    <BlockMath math={`y(0.1) = 1.11034`} />
                   </div>
                 </div>
 
@@ -152,7 +154,7 @@ export default function TaylorSeriesMethodPage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Value: y(0.1) &approx; 1.11034
+                      Approximated Value: y(0.1) ≈ 1.11034
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{y(0.1) \\approx 1.11034} \\quad (\\text{Exact: } 2e^{0.1} - 1.1 \\approx 1.11034)`} />

@@ -179,9 +179,11 @@ export default function ChiSquarePage() {
                   <p className="text-sm text-neutral-700 dark:text-neutral-300">
                     Compare test statistic with critical threshold for <InlineMath math="df = 4 - 1 = 3" />:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
-                    <BlockMath math="\chi^2_{\text{calc}} = 1.25 + 0.05 + 0.80 + 0.00 = 2.10" />
-                    <BlockMath math="\chi^2_{\text{calc}} = 2.10 < \chi^2_{0.05, 3} = 7.815" />
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`\\chi^2_{\\text{calc}} = \\sum_{i=1}^4 \\frac{(O_i - E_i)^2}{E_i}`} />
+                    <BlockMath math={`\\chi^2_{\\text{calc}} = \\frac{(25-20)^2}{20} + \\frac{(19-20)^2}{20} + \\frac{(16-20)^2}{20} + \\frac{(20-20)^2}{20}`} />
+                    <BlockMath math={`\\chi^2_{\\text{calc}} = 1.25000 + 0.05000 + 0.80000 + 0.00000 = 2.10000`} />
+                    <BlockMath math={`\\chi^2_{\\text{calc}} = 2.10000 < \\chi^2_{0.05, 3} = 7.815`} />
                   </div>
                 </div>
 

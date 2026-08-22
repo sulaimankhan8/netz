@@ -11,12 +11,12 @@ import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function IterationMethods() {
   const iterationData = [
-    { k: 0, xn: '1.500000', xnext: '1.357209', err: '0.142791' },
-    { k: 1, xn: '1.357209', xnext: '1.330861', err: '0.026348' },
-    { k: 2, xn: '1.330861', xnext: '1.325884', err: '0.004977' },
-    { k: 3, xn: '1.325884', xnext: '1.324942', err: '0.000942' },
-    { k: 4, xn: '1.324942', xnext: '1.324764', err: '0.000178' },
-    { k: 5, xn: '1.324764', xnext: '1.324730', err: '0.000034' },
+    { k: 1, xprev: '1.500000', xk: '1.357209', err: '0.142791' },
+    { k: 2, xprev: '1.357209', xk: '1.330861', err: '0.026348' },
+    { k: 3, xprev: '1.330861', xk: '1.325884', err: '0.004977' },
+    { k: 4, xprev: '1.325884', xk: '1.324942', err: '0.000942' },
+    { k: 5, xprev: '1.324942', xk: '1.324764', err: '0.000178' },
+    { k: 6, xprev: '1.324764', xk: '1.324730', err: '0.000034' },
   ];
 
   return (
@@ -64,7 +64,7 @@ export default function IterationMethods() {
                   </div>
 
                   <div className="py-4 text-center overflow-x-auto space-y-2">
-                    <BlockMath math={`x_{n+1} = \\phi(x_n)`} />
+                    <BlockMath math={`x_{k} = \\phi(x_{k-1})`} />
                     <BlockMath math={`|\\phi'(x)| < 1 \\quad (\\text{Strict Convergence Condition})`} />
                   </div>
 
@@ -84,7 +84,7 @@ export default function IterationMethods() {
                     <div className="p-3 border border-black/40 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 shadow-xs">
                       <strong className="text-black dark:text-white block font-bold">3. Feed Next Guess</strong>
                       <span className="text-neutral-600 dark:text-neutral-400">
-                        Plug <InlineMath math="x_{n+1}" /> back into <InlineMath math="\phi" /> until differences vanish.
+                        Plug <InlineMath math="x_{k}" /> back into <InlineMath math="\phi" /> until differences vanish.
                       </span>
                     </div>
                   </div>
@@ -182,18 +182,18 @@ export default function IterationMethods() {
                     <table className="w-full text-center text-xs font-mono border-collapse">
                       <thead>
                         <tr className="bg-neutral-200 dark:bg-neutral-900 text-black dark:text-white border-b border-black/30 dark:border-neutral-700 font-bold">
-                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Step (n)</th>
-                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Input Guess (x_n)</th>
-                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Output Next Guess (x_n+1)</th>
-                          <th className="p-2.5">Difference (|x_n+1 - x_n|)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Iteration (k)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Input Guess (x_{'{k-1}'})</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Output Next Guess (x_k)</th>
+                          <th className="p-2.5">Difference (|x_k - x_{'{k-1}'}|)</th>
                         </tr>
                       </thead>
                       <tbody>
                         {iterationData.map((row) => (
                           <tr key={row.k} className="hover:bg-neutral-50 dark:hover:bg-neutral-900 border-t border-black/15 dark:border-neutral-700">
                             <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold">{row.k}</td>
-                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.xn}</td>
-                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold bg-[#FFE600]/20 dark:bg-amber-950/40">{row.xnext}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700">{row.xprev}</td>
+                            <td className="p-2.5 border-r border-black/15 dark:border-neutral-700 font-bold bg-[#FFE600]/20 dark:bg-amber-950/40">{row.xk}</td>
                             <td className="p-2.5 font-bold">{row.err}</td>
                           </tr>
                         ))}
@@ -210,7 +210,7 @@ export default function IterationMethods() {
                       FINAL CONCLUSION
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Fixed Point: x &approx; 1.3247
+                      Approximated Fixed Point: x ≈ 1.3247
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\text{Exact Root } \\alpha \\approx 1.324718, \\quad (1.324718)^3 - (1.324718) - 1 = 0`} />

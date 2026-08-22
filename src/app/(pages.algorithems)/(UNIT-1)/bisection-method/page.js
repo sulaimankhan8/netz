@@ -5,7 +5,7 @@ import Head from 'next/head';
 import { BlockMath, InlineMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import FullscreenToggle from '@/app/components/FullscreenToggle';
-import ThemeToggle from '@/app/components/ThemeToggle';
+import { EditorialThemeToggle } from '@/app/components/editorial';
 import BisectionMethod from './algorithems.bisection-method';
 import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
@@ -39,7 +39,7 @@ export default function BisectionMethods() {
                   <div className="inline-block border-2 border-black dark:border-white bg-[#FFE600] text-black px-3 py-0.5 text-xs font-mono font-black uppercase tracking-widest shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-md">
                     UNIT 1 • FINDING ROOTS OF EQUATIONS
                   </div>
-                  <ThemeToggle />
+                  <EditorialThemeToggle />
                 </div>
 
                 <h1 className="text-3xl md:text-5xl font-black tracking-tight uppercase leading-tight text-black dark:text-white">

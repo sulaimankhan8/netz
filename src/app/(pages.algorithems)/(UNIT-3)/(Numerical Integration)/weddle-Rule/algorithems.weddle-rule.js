@@ -261,7 +261,7 @@ const WeddleRuleSolver = () => {
                 Weddle&apos;s Rule Integral Result
               </span>
               <span className="text-base md:text-lg font-mono font-black">
-                I &approx; {result.integralValue.toFixed(8)}
+                I ≈ {result.integralValue.toFixed(8)}
               </span>
             </div>
 

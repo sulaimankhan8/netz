@@ -208,13 +208,13 @@ export default function LeastSquaresPage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Exponential Model: y &approx; 0.5353 · e^(1.0792x)
+                      Exponential Model: y ≈ 0.5353 · e^(1.0792x)
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{y = 0.5353 \\cdot e^{1.0792 x}}`} />
                     </div>
                     <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium leading-relaxed">
-                      Using logarithmic least squares regression, the best fitting exponential growth curve is <strong>y &approx; 0.5353 · e^(1.0792x)</strong>!
+                      Using logarithmic least squares regression, the best fitting exponential growth curve is <strong>y ≈ 0.5353 · e^(1.0792x)</strong>!
                     </p>
                   </div>
                 </div>

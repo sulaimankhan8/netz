@@ -192,9 +192,10 @@ export default function Simpson13RulePage() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting values:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math={`I = \\frac{0.25}{3} \\left[ (1.00000 + 0.50000) + 4(0.80000 + 0.57143) + 2(0.66667) \\right]`} />
-                    <BlockMath math={`I = \\frac{0.25}{3} \\left[ 1.50000 + 5.48572 + 1.33334 \\right] = \\frac{0.25}{3} (8.31906) \\approx 0.69315`} />
+                    <BlockMath math={`I = \\frac{0.25}{3} \\left[ 1.50000 + 4(1.37143) + 2(0.66667) \\right] = \\frac{0.25}{3} \\left[ 1.50000 + 5.48572 + 1.33334 \\right]`} />
+                    <BlockMath math={`I = \\frac{0.25}{3} (8.31906) = 0.69326`} />
                   </div>
                 </div>
 
@@ -206,7 +207,7 @@ export default function Simpson13RulePage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Integral: I &approx; 0.69315
+                      Approximated Integral: I ≈ 0.69315
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{\\int_0^1 \\frac{1}{1+x} dx \\approx 0.69315} \\quad (\\text{Exact: } \\ln 2 \\approx 0.693147)`} />

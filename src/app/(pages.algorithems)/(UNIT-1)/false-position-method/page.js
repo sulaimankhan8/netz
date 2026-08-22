@@ -229,7 +229,7 @@ export default function FalsePositionMethods() {
                       FINAL CONCLUSION
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Root: x &approx; 2.0945
+                      Approximated Root: x ≈ 2.0945
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\text{Exact Root } \\alpha \\approx 2.09455, \\quad f(2.09455) = 0`} />

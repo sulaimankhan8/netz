@@ -213,9 +213,10 @@ export default function NewtonsDividedDifferences() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting values (<InlineMath math="x = 0.3, y_0 = 1, f[x_0,x_1] = 2, f[x_0,x_1,x_2] = 7, f[x_0..x_3] = 3" />):
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
-                    <BlockMath math={`f(0.3) = 1 + (0.3 - 0)(2) + (0.3)(0.3 - 1)(7) + (0.3)(0.3 - 1)(0.3 - 3)(3)`} />
-                    <BlockMath math={`f(0.3) = 1 + 0.6 - 1.47 + 1.701 = 1.831`} />
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`f(0.3) = 1 + (0.3)(2) + (0.3)(-0.7)(7) + (0.3)(-0.7)(-2.7)(3)`} />
+                    <BlockMath math={`f(0.3) = 1.00000 + 0.60000 - 1.47000 + 1.70100`} />
+                    <BlockMath math={`f(0.3) = 1.83100`} />
                   </div>
                 </div>
 

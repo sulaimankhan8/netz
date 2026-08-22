@@ -11,10 +11,10 @@ import AlgorithmNavigation from '@/app/components/AlgorithmNavigation';
 
 export default function NewtonRaphsonMethods() {
   const iterationData = [
-    { k: 0, xn: '2.000000', fxn: '-1.000000', fpxn: '4.000000', xnext: '2.250000', err: '0.250000' },
-    { k: 1, xn: '2.250000', fxn: '+0.062500', fpxn: '4.500000', xnext: '2.236111', err: '0.013889' },
-    { k: 2, xn: '2.236111', fxn: '+0.000193', fpxn: '4.472222', xnext: '2.236068', err: '0.000043' },
-    { k: 3, xn: '2.236068', fxn: '0.000000', fpxn: '4.472136', xnext: '2.236068', err: '0.000000' },
+    { k: 1, xn: '2.000000', fxn: '-1.000000', fpxn: '4.000000', xnext: '2.250000', err: '0.250000' },
+    { k: 2, xn: '2.250000', fxn: '+0.062500', fpxn: '4.500000', xnext: '2.236111', err: '0.013889' },
+    { k: 3, xn: '2.236111', fxn: '+0.000193', fpxn: '4.472222', xnext: '2.236068', err: '0.000043' },
+    { k: 4, xn: '2.236068', fxn: '0.000000', fpxn: '4.472136', xnext: '2.236068', err: '0.000000' },
   ];
 
   return (
@@ -177,7 +177,7 @@ export default function NewtonRaphsonMethods() {
                     <table className="w-full text-center text-xs font-mono border-collapse">
                       <thead>
                         <tr className="bg-neutral-200 dark:bg-neutral-900 text-black dark:text-white border-b border-black/30 dark:border-neutral-700 font-bold">
-                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Step (n)</th>
+                          <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Iteration (k)</th>
                           <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">Current Guess (x_n)</th>
                           <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">f(x_n)</th>
                           <th className="p-2.5 border-r border-black/20 dark:border-neutral-700">f&apos;(x_n)</th>
@@ -209,7 +209,7 @@ export default function NewtonRaphsonMethods() {
                       FINAL CONCLUSION
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Root: x &approx; 2.236068 (&radic;5)
+                      Approximated Root: x ≈ 2.236068 (√5)
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\text{Exact Root } \\sqrt{5} \\approx 2.236067977, \\quad (2.236068)^2 - 5 = 0`} />

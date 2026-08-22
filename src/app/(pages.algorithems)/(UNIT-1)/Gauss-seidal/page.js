@@ -336,7 +336,7 @@ const GaussSeidelPage = () => {
                       FINAL CONCLUSION
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Converged Solution: (x, y, z) &approx; (1.45, 4.36, 1.80)
+                      Converged Solution: (x, y, z) ≈ (1.45, 4.36, 1.80)
                     </h3>
                     <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium leading-relaxed">
                       By immediately reusing newly solved values within each pass, Gauss-Seidel converges much faster than Jacobi iteration!

@@ -226,9 +226,10 @@ export default function GaussBackwardInterpolations() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting our calculated values (<InlineMath math="p = -0.5, y_0 = 27, \Delta y_{-1} = 7, \Delta^2 y_{-1} = 5, \Delta^3 y_{-2} = 3" />):
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
-                    <BlockMath math={`P(1946) = 27 + (-0.5)(7) + \\frac{(-0.5+1)(-0.5)}{2}(5) + \\frac{(-0.5+1)(-0.5)(-0.5-1)}{6}(3)`} />
-                    <BlockMath math={`P(1946) = 27 - 3.5 - 0.625 + 0.1875 = 23.0625`} />
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`P(1946) = 27 + (-0.5)(7) + \\frac{(0.5)(-0.5)}{2}(5) + \\frac{(0.5)(-0.5)(-1.5)}{6}(3)`} />
+                    <BlockMath math={`P(1946) = 27.00000 - 3.50000 - 0.62500 + 0.18750`} />
+                    <BlockMath math={`P(1946) = 23.06250 \\text{ million}`} />
                   </div>
                 </div>
 

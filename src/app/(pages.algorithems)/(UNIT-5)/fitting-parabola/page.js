@@ -230,7 +230,7 @@ export default function FittingParabolaPage() {
                     <BlockMath math="5 a + 10 b + 30 c = 21.6" />
                     <BlockMath math="10 a + 30 b + 100 c = 64.4" />
                     <BlockMath math="30 a + 100 b + 354 c = 221.0" />
-                    <BlockMath math="a = 1.0229, \\quad b = 0.2343, \\quad c = 0.4714" />
+                    <BlockMath math="a = 1.0229, \quad b = 0.2343, \quad c = 0.4714" />
                   </div>
                 </div>
 

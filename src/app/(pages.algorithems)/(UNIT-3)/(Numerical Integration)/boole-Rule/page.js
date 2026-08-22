@@ -192,9 +192,10 @@ export default function BooleRulePage() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting values:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math={`I = \\frac{2(1.0)}{45} \\left[ 7(1.0) + 32(2.71828) + 12(7.38906) + 32(20.08554) + 7(54.59815) \\right]`} />
-                    <BlockMath math={`I = \\frac{2}{45} \\left[ 7.0 + 86.98496 + 88.66872 + 642.73728 + 382.18705 \\right] = \\frac{2}{45} (1207.57801) \\approx 53.6701`} />
+                    <BlockMath math={`I = \\frac{2}{45} \\left[ 7.00000 + 86.98496 + 88.66872 + 642.73728 + 382.18705 \\right]`} />
+                    <BlockMath math={`I = \\frac{2}{45} (1207.57801) = 53.67013`} />
                   </div>
                 </div>
 
@@ -206,7 +207,7 @@ export default function BooleRulePage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Integral: I &approx; 53.6701
+                      Approximated Integral: I ≈ 53.6701
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{\\int_0^4 e^x dx \\approx 53.6701} \\quad (\\text{Exact: } e^4 - 1 \\approx 53.59815)`} />

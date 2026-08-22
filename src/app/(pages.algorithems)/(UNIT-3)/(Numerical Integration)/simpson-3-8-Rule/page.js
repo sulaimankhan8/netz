@@ -186,9 +186,10 @@ export default function Simpson38RulePage() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting values:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math={`I = \\frac{3(1.0)}{8} \\left[ (1.00000 + 20.08554) + 3(2.71828 + 7.38906) \\right]`} />
-                    <BlockMath math={`I = 0.375 \\left[ 21.08554 + 30.32202 \\right] = 0.375 (51.40756) \\approx 19.2778`} />
+                    <BlockMath math={`I = 0.37500 \\left[ 21.08554 + 3(10.10734) \\right] = 0.37500 \\left[ 21.08554 + 30.32202 \\right]`} />
+                    <BlockMath math={`I = 0.37500 (51.40756) = 19.27784`} />
                   </div>
                 </div>
 
@@ -200,7 +201,7 @@ export default function Simpson38RulePage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Integral: I &approx; 19.2778
+                      Approximated Integral: I ≈ 19.2778
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{\\int_0^3 e^x dx \\approx 19.2778} \\quad (\\text{Exact: } e^3 - 1 \\approx 19.0855)`} />

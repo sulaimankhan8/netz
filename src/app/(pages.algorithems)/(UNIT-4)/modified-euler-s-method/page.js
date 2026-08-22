@@ -134,7 +134,7 @@ export default function ModifiedEulerMethodPage() {
                     Evaluate starting slope <InlineMath math="f(0, 1) = 0 + 1 = 1.0" /> and project trial endpoint:
                   </p>
                   <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
-                    <BlockMath math="y_1^{(0)} = y_0 + h \\cdot f(x_0, y_0) = 1.0 + (0.1)(1.0) = 1.10000" />
+                    <BlockMath math="y_1^{(0)} = y_0 + h \cdot f(x_0, y_0) = 1.0 + (0.1)(1.0) = 1.10000" />
                   </div>
                 </div>
 
@@ -148,14 +148,14 @@ export default function ModifiedEulerMethodPage() {
                   </p>
                   <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math="f(0.1, 1.10000) = 0.1 + 1.1 = 1.20000" />
-                    <BlockMath math="y_1^{(1)} = 1.0 + \\frac{0.1}{2} [1.0 + 1.20000] = 1.0 + (0.05)(2.2) = 1.11000" />
+                    <BlockMath math="y_1^{(1)} = 1.0 + \frac{0.1}{2} [1.0 + 1.20000] = 1.0 + (0.05)(2.2) = 1.11000" />
                   </div>
                   <p className="text-sm text-neutral-700 dark:text-neutral-300 pt-1">
                     <strong>2nd Corrector:</strong> Re-evaluate slope at updated point <InlineMath math="(0.1, 1.11000)" />:
                   </p>
                   <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math="f(0.1, 1.11000) = 0.1 + 1.11000 = 1.21000" />
-                    <BlockMath math="y_1^{(2)} = 1.0 + \\frac{0.1}{2} [1.0 + 1.21000] = 1.0 + (0.05)(2.21) = 1.11050" />
+                    <BlockMath math="y_1^{(2)} = 1.0 + \frac{0.1}{2} [1.0 + 1.21000] = 1.0 + (0.05)(2.21) = 1.11050" />
                   </div>
                 </div>
 

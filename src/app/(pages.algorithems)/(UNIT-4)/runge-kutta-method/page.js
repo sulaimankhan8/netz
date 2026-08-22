@@ -146,10 +146,11 @@ export default function RungeKuttaMethodPage() {
                   <p className="text-sm text-neutral-700 dark:text-neutral-300">
                     Combine the 4 slopes into the RK4 update equation:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                    <BlockMath math={`\\Delta y = \\frac{1}{6} \\left[ k_1 + 2k_2 + 2k_3 + k_4 \\right]`} />
                     <BlockMath math={`\\Delta y = \\frac{1}{6} \\left[ 0.10000 + 2(0.11000) + 2(0.11050) + 0.12105 \\right]`} />
-                    <BlockMath math={`\\Delta y = \\frac{1}{6} [0.66205] = 0.1103417`} />
-                    <BlockMath math={`y(0.1) = 1.0 + 0.1103417 = 1.11034`} />
+                    <BlockMath math={`\\Delta y = \\frac{1}{6} \\left[ 0.10000 + 0.22000 + 0.22100 + 0.12105 \\right] = \\frac{0.66205}{6} = 0.110342`} />
+                    <BlockMath math={`y(0.1) = y_0 + \\Delta y = 1.00000 + 0.110342 = 1.11034`} />
                   </div>
                 </div>
 
@@ -161,7 +162,7 @@ export default function RungeKuttaMethodPage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      RK4 Value: y(0.1) &approx; 1.11034
+                      RK4 Value: y(0.1) ≈ 1.11034
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{y(0.1) \\approx 1.11034} \\quad (\\text{Exact: } 2e^{0.1} - 1.1 \\approx 1.1103418)`} />

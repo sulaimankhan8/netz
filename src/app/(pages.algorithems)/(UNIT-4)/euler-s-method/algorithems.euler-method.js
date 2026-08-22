@@ -261,7 +261,7 @@ const EulerMethodSolver = () => {
                 Euler Approximate Solution Result
               </span>
               <span className="text-base md:text-lg font-mono font-black">
-                y({result.targetX.toFixed(4)}) &approx; {result.finalY.toFixed(6)}
+                y({result.targetX.toFixed(4)}) ≈ {result.finalY.toFixed(6)}
               </span>
             </div>
 

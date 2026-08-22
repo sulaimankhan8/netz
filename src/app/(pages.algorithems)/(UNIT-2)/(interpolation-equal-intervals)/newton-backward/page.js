@@ -159,7 +159,7 @@ export default function NewtonBackwardInterpolation() {
                     <span>STEP 01</span> • <span>CALCULATE THE BACKWARD DIFFERENCES FOR THE Y VALUES</span>
                   </div>
                   <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                    We construct the difference table by subtracting each <InlineMath math="y" /> value from its successor. The bottom row values (highlighted in emerald) form our primary backward difference vector <InlineMath math="[y_n, \\nabla y_n, \\nabla^2 y_n, \\nabla^3 y_n, \\nabla^4 y_n]" />:
+                    We construct the difference table by subtracting each <InlineMath math="y" /> value from its successor. The bottom row values (highlighted in emerald) form our primary backward difference vector <InlineMath math="[y_n, \nabla y_n, \nabla^2 y_n, \nabla^3 y_n, \nabla^4 y_n]" />:
                   </p>
 
                   <div className="overflow-x-auto rounded-xl border-2 border-black/30 dark:border-neutral-700">
@@ -251,70 +251,12 @@ export default function NewtonBackwardInterpolation() {
 
                   <div className="space-y-2 pt-2">
                     <p className="text-sm font-bold text-black dark:text-white">
-                      Substituting the values (<InlineMath math="v = -1.75, y_n = 40, \\nabla y_n = 5.06, \\nabla^2 y_n = 2.87, \\nabla^3 y_n = 3.24, \\nabla^4 y_n = 4.04" />):
+                      Substituting values (<InlineMath math="v = -1.75, y_n = 40, \nabla y_n = 5.06, \nabla^2 y_n = 2.87, \nabla^3 y_n = 3.24, \nabla^4 y_n = 4.04" />):
                     </p>
-                    <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
-                      <BlockMath math={`P(33) = 40 + \\frac{-1.75}{1!} (5.06) + \\frac{-1.75(-1.75+1)}{2!} (2.87) + \\frac{-1.75(-1.75+1)(-1.75+2)}{3!} (3.24) + \\frac{-1.75(-1.75+1)(-1.75+2)(-1.75+3)}{4!} (4.04)`} />
-                    </div>
-                  </div>
-
-                  {/* Step-by-Step Term Breakdown */}
-                  <div className="space-y-3 pt-3 border-t border-black/20 dark:border-neutral-700">
-                    <h3 className="text-sm font-black uppercase text-black dark:text-white tracking-wider">
-                      Step-by-step Term Breakdown:
-                    </h3>
-
-                    <div className="space-y-3 font-mono text-xs">
-                      {/* Term 1 */}
-                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
-                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
-                          First term (Base Anchor y_n):
-                        </span>
-                        <BlockMath math="40" />
-                      </div>
-
-                      {/* Term 2 */}
-                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
-                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
-                          Second term [ v · ∇y_n ]:
-                        </span>
-                        <BlockMath math="\\frac{-1.75}{1!} \\cdot 5.0600 = -8.85500" />
-                      </div>
-
-                      {/* Term 3 */}
-                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
-                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
-                          Third term [ v(v+1)/2! · ∇²y_n ]:
-                        </span>
-                        <BlockMath math="\\frac{-1.75 \\cdot (-1.75+1)}{2!} \\cdot 2.8700 = \\frac{1.3125}{2} \\cdot 2.8700 = 1.88344" />
-                      </div>
-
-                      {/* Term 4 */}
-                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
-                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
-                          Fourth term [ v(v+1)(v+2)/3! · ∇³y_n ]:
-                        </span>
-                        <BlockMath math="\\frac{-1.75 \\cdot (-1.75+1) \\cdot (-1.75+2)}{3!} \\cdot 3.2400 = \\frac{0.328125}{6} \\cdot 3.2400 = 0.17718" />
-                      </div>
-
-                      {/* Term 5 */}
-                      <div className="p-3.5 border-2 border-black/30 dark:border-neutral-700 rounded-xl bg-[#FAF8F5] dark:bg-neutral-900 space-y-1">
-                        <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase block">
-                          Fifth term [ v(v+1)(v+2)(v+3)/4! · ∇⁴y_n ]:
-                        </span>
-                        <BlockMath math="\\frac{-1.75 \\cdot (-1.75+1) \\cdot (-1.75+2) \\cdot (-1.75+3)}{4!} \\cdot 4.0400 = \\frac{0.410156}{24} \\cdot 4.0400 = 0.06904" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Adding them together */}
-                  <div className="space-y-2 pt-3 border-t border-black/20 dark:border-neutral-700">
-                    <p className="text-sm font-bold text-black dark:text-white uppercase tracking-wider">
-                      Adding them together:
-                    </p>
-                    <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border-2 border-black/40 dark:border-neutral-700 rounded-xl font-mono text-xs md:text-sm overflow-x-auto text-center space-y-2">
-                      <BlockMath math={`P(33) = 40 + (-8.85500) + 1.88344 + 0.17718 + 0.06904`} />
-                      <BlockMath math={`P(33) = 33.27466`} />
+                    <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                      <BlockMath math={`P(33) = 40 + \\frac{-1.75}{1!}(5.06) + \\frac{(-1.75)(-0.75)}{2!}(2.87) + \\frac{(-1.75)(-0.75)(0.25)}{3!}(3.24) + \\frac{(-1.75)(-0.75)(0.25)(1.25)}{4!}(4.04)`} />
+                      <BlockMath math={`P(33) = 40.00000 - 8.85500 + 1.88344 + 0.17719 + 0.06904`} />
+                      <BlockMath math={`P(33) = 33.27467`} />
                     </div>
                   </div>
                 </div>
@@ -327,7 +269,7 @@ export default function NewtonBackwardInterpolation() {
                       CONCLUSION
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Interpolated Result: y(33) &approx; 33.27466
+                      Interpolated Result: y(33) ≈ 33.27466
                     </h3>
                     <div className="p-4 bg-white dark:bg-neutral-800 border-2 border-black/20 dark:border-neutral-700 rounded-xl font-mono text-sm overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{P(33) \\approx 33.27466}`} />

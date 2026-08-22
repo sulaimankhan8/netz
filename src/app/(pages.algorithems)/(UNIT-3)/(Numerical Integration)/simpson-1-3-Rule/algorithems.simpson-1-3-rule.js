@@ -271,7 +271,7 @@ const Simpson13RuleSolver = () => {
                 Parabolic Approximation Integral Result
               </span>
               <span className="text-base md:text-lg font-mono font-black">
-                I &approx; {result.integralValue.toFixed(8)}
+                I ≈ {result.integralValue.toFixed(8)}
               </span>
             </div>
 

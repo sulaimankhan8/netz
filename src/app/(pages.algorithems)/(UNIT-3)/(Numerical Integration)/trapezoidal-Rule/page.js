@@ -204,9 +204,10 @@ export default function TrapezoidalRulePage() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting values:
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math={`I = \\frac{1/6}{2} \\left[ (1.00000 + 0.50000) + 2(0.97297 + 0.90000 + 0.80000 + 0.69231 + 0.59016) \\right]`} />
-                    <BlockMath math={`I = \\frac{1}{12} \\left[ 1.50000 + 2(3.95544) \\right] = \\frac{9.41088}{12} \\approx 0.78424`} />
+                    <BlockMath math={`I = \\frac{1}{12} \\left[ 1.50000 + 2(3.95544) \\right] = \\frac{1}{12} \\left[ 1.50000 + 7.91088 \\right]`} />
+                    <BlockMath math={`I = \\frac{1}{12} (9.41088) = 0.78424`} />
                   </div>
                 </div>
 
@@ -218,7 +219,7 @@ export default function TrapezoidalRulePage() {
                       FINAL RESULT
                     </span>
                     <h3 className="text-xl font-bold text-black dark:text-white">
-                      Approximated Integral: I &approx; 0.78424
+                      Approximated Integral: I ≈ 0.78424
                     </h3>
                     <div className="p-3 bg-neutral-50 dark:bg-neutral-800 border border-black/20 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center">
                       <BlockMath math={`\\boxed{\\int_0^1 \\frac{1}{1+x^2} dx \\approx 0.78424} \\quad (\\text{Exact: } \\frac{\\pi}{4} \\approx 0.78540)`} />

@@ -211,9 +211,10 @@ export default function NewtonForwardInterpolation() {
                   <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 pt-1">
                     Substituting values (<InlineMath math="v = 1.5, y_0 = 2, \Delta y_0 = 3, \Delta^2 y_0 = 2, \Delta^3 y_0 = 0" />):
                   </p>
-                  <div className="p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
+                  <div className="p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl font-mono text-xs overflow-x-auto text-center space-y-2">
                     <BlockMath math={`P(2.5) = 2 + (1.5)(3) + \\frac{1.5(1.5-1)}{2}(2) + 0`} />
-                    <BlockMath math={`P(2.5) = 2 + 4.5 + 0.75 = 7.25`} />
+                    <BlockMath math={`P(2.5) = 2.00000 + 4.50000 + 0.75000 + 0.00000`} />
+                    <BlockMath math={`P(2.5) = 7.25000`} />
                   </div>
                 </div>
 
