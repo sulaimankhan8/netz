@@ -1,10 +1,16 @@
 'use client';
 
-import UnderConstruction from "../../utils/underconstruction";
+import dynamic from 'next/dynamic';
 
-export default function test(){
+const PlaygroundCanvasContainer = dynamic(
+  () => import('./components/PlaygroundCanvasContainer'),
+  { ssr: false }
+);
 
-    return(
-        <UnderConstruction/>
-    );
+export default function PlaygroundPage() {
+  return (
+    <main className="w-full h-full min-h-screen overflow-hidden">
+      <PlaygroundCanvasContainer />
+    </main>
+  );
 }
