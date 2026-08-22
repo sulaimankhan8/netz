@@ -451,6 +451,201 @@ const INITIAL_SEED_WORDS = [
   'whatever', 'whether', 'window', 'without', 'worker', 'working', 'writer', 'writing', 'yellow', 'yourself',
 ];
 
+// Common chat/internet abbreviations and short informal words. These are
+// deliberately NOT in formal dictionaries like words_alpha.txt, so without
+// seeding them explicitly, typing "brb" will only ever suggest real
+// dictionary words ("bro", "bring", ...) and never "brb" itself.
+const COMMON_ABBREVIATIONS = [
+  'brb', 'btw', 'lol', 'lmao', 'omg', 'idk', 'imo', 'imho', 'tbh', 'ttyl',
+  'np', 'nvm', 'afaik', 'irl', 'faq', 'diy', 'rsvp', 'eta', 'aka', 'asap',
+  'fyi', 'fwiw', 'iirc', 'jk', 'wfh', 'ooo', 'dm', 'gg', 'thx', 'pls',
+  'gr8', 'wyd', 'hbu', 'ily', 'smh', 'tmi', 'ftw', 'yolo', 'rn', 'cya',
+];
+
+// ---------------------------------------------------------------------------
+// Next-word (bigram) prediction: baseline model + personalization
+// ---------------------------------------------------------------------------
+
+/**
+ * Small curated baseline of common English word -> likely-next-word
+ * transitions, ordered most-likely-first. This exists purely so next-word
+ * prediction isn't blank on a brand-new session before any personal
+ * typing history has accumulated. It intentionally covers high-frequency
+ * function words rather than trying to be exhaustive — a full n-gram
+ * corpus is out of scope for a lightweight client-side engine, and
+ * personalization (below) is what actually makes suggestions feel sharp
+ * for a given user.
+ */
+const BASELINE_BIGRAMS = {
+  i: ['am', 'think', 'have', 'was', 'll'],
+  you: ['are', 'can', 'have', 'll', 'know'],
+  he: ['is', 'was', 'said', 'has'],
+  she: ['is', 'was', 'said', 'has'],
+  we: ['are', 'have', 'need', 'should'],
+  they: ['are', 'have', 'were', 'will'],
+  it: ['is', 'was', 'would', 's'],
+  the: ['same', 'first', 'best', 'only', 'most'],
+  a: ['few', 'lot', 'little', 'new', 'good'],
+  to: ['be', 'the', 'get', 'see', 'do'],
+  of: ['the', 'a', 'this', 'course'],
+  in: ['the', 'a', 'this', 'order', 'fact'],
+  on: ['the', 'a', 'this', 'my'],
+  for: ['the', 'a', 'example', 'your', 'this'],
+  with: ['the', 'a', 'you', 'my'],
+  is: ['a', 'the', 'not', 'this'],
+  was: ['a', 'the', 'not', 'going'],
+  will: ['be', 'not', 'have', 'need'],
+  can: ['be', 'you', 'i', 'also'],
+  have: ['a', 'to', 'been', 'the'],
+  and: ['the', 'i', 'then', 'a'],
+  that: ['is', 'was', 'the', 'you'],
+  this: ['is', 'was', 'means', 'will'],
+  as: ['well', 'soon', 'a', 'the'],
+  so: ['i', 'that', 'much', 'far'],
+  just: ['a', 'the', 'in', 'want'],
+  let: ['me', 'us', 's'],
+  please: ['let', 'find', 'note', 'see'],
+  thank: ['you'],
+  looking: ['forward', 'for', 'at'],
+  thanks: ['for', 'a', 'again'],
+};
+
+/**
+ * Tracks (previousWord -> nextWord) frequency from the user's own typing,
+ * persisted to IndexedDB, capped in size, and merged on top of the
+ * baseline model at query time (personal history wins ties).
+ */
+class BigramModel {
+  constructor(config, idb, logger) {
+    this.config = config;
+    this.idb = idb;
+    this.logger = logger;
+    /** @type {Map<string, Map<string, number>>} */
+    this.contexts = new Map();
+    this._saveTimer = null;
+    this._channel = null;
+    this._loaded = false;
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        this._channel = new BroadcastChannel(`${config.dbName}:bigram_model`);
+        this._channel.onmessage = (ev) => {
+          if (ev?.data?.type === 'bigram' && ev.data.prev && ev.data.next) {
+            this._bump(ev.data.prev, ev.data.next, { broadcast: false });
+          }
+        };
+      } catch (err) {
+        this.logger.warn('[AutocompleteTrie] BroadcastChannel unavailable for bigram model:', err);
+      }
+    }
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const flush = () => this._flushNow();
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flush();
+      });
+      window.addEventListener('pagehide', flush);
+    }
+  }
+
+  async load() {
+    if (this._loaded) return;
+    try {
+      const res = await this.idb.get('bigram_model');
+      if (res && Array.isArray(res.entries)) {
+        for (const [prev, nextCounts] of res.entries) {
+          this.contexts.set(prev, new Map(nextCounts));
+        }
+      }
+    } catch (err) {
+      this.logger.warn('[AutocompleteTrie] Failed to load bigram model:', err);
+    } finally {
+      this._loaded = true;
+    }
+  }
+
+  record(prevWord, nextWord) {
+    if (!prevWord || !nextWord) return;
+    this._bump(prevWord, nextWord, { broadcast: true });
+  }
+
+  _bump(prevWord, nextWord, { broadcast }) {
+    const maxContexts = this.config.maxBigramContexts ?? 3000;
+    const maxNextPerContext = this.config.maxNextWordsPerContext ?? 8;
+
+    let nextMap = this.contexts.get(prevWord);
+    if (!nextMap) {
+      if (this.contexts.size >= maxContexts) {
+        // Evict the least-recently-touched context (Map preserves insertion order).
+        const oldestKey = this.contexts.keys().next().value;
+        if (oldestKey !== undefined) this.contexts.delete(oldestKey);
+      }
+      nextMap = new Map();
+      this.contexts.set(prevWord, nextMap);
+    } else {
+      // Re-insert to mark as recently touched (for the eviction policy above).
+      this.contexts.delete(prevWord);
+      this.contexts.set(prevWord, nextMap);
+    }
+
+    nextMap.set(nextWord, (nextMap.get(nextWord) || 0) + 1);
+    if (nextMap.size > maxNextPerContext) {
+      const sorted = [...nextMap.entries()].sort((a, b) => b[1] - a[1]);
+      nextMap.clear();
+      for (const [w, c] of sorted.slice(0, maxNextPerContext)) nextMap.set(w, c);
+    }
+
+    this._scheduleSave();
+    if (broadcast && this._channel) {
+      try {
+        this._channel.postMessage({ type: 'bigram', prev: prevWord, next: nextWord });
+      } catch {
+        // Best-effort only.
+      }
+    }
+  }
+
+  /**
+   * Returns up to `limit` likely next words for `prevWord`. Personal
+   * history is merged on top of (and ranked above) the baseline model.
+   */
+  suggest(prevWord, limit = 1) {
+    if (!prevWord) return [];
+    const personal = this.contexts.get(prevWord);
+    const personalSorted = personal
+      ? [...personal.entries()].sort((a, b) => b[1] - a[1]).map(([w]) => w)
+      : [];
+
+    if (personalSorted.length >= limit) return personalSorted.slice(0, limit);
+
+    const baseline = BASELINE_BIGRAMS[prevWord] || [];
+    const merged = [...personalSorted];
+    for (const w of baseline) {
+      if (!merged.includes(w)) merged.push(w);
+      if (merged.length >= limit) break;
+    }
+    return merged.slice(0, limit);
+  }
+
+  _scheduleSave() {
+    if (this._saveTimer) clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => this._flushNow(), this.config.recentWordsSaveDebounceMs);
+  }
+
+  _flushNow() {
+    if (this._saveTimer) {
+      clearTimeout(this._saveTimer);
+      this._saveTimer = null;
+    }
+    const entries = [...this.contexts.entries()].map(([prev, nextMap]) => [prev, [...nextMap.entries()]]);
+    this.idb.set('bigram_model', { entries, updatedAt: Date.now() });
+  }
+
+  dispose() {
+    this._flushNow();
+    this._channel?.close?.();
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Recently used words: frequency + recency ranking, cross-tab sync
 // ---------------------------------------------------------------------------
@@ -610,11 +805,17 @@ export class AutocompleteEngine {
     this.idb = new IdbStore(this.config, this.logger);
     this.globalTrie = new AutocompleteTrie({ maxWordLength: this.config.maxWordLength });
     this.globalTrie.insertBatch(INITIAL_SEED_WORDS);
+    this.globalTrie.insertBatch(COMMON_ABBREVIATIONS);
     this.recentWords = new RecentWordsManager(this.config, this.idb, this.logger);
+    this.bigramModel = new BigramModel(this.config, this.idb, this.logger);
 
     this.state = AutocompleteState.IDLE;
     this.lastError = null;
     this._initPromise = null;
+    // Tracks the last completed word so recordRecentWord() calls, which the
+    // host app fires in typing order, can be turned into (prev -> next)
+    // bigram observations automatically without any extra integration work.
+    this._lastRecordedWord = null;
 
     this._prefixRegex = this.config.unicodeAware ? /([\p{L}]+)$/u : /([a-zA-Z]+)$/;
   }
@@ -664,7 +865,7 @@ export class AutocompleteEngine {
     this.emitter.emit('progress', { phase: 'loading-recent-words' });
 
     try {
-      await this.recentWords.load();
+      await Promise.all([this.recentWords.load(), this.bigramModel.load()]);
 
       const now = Date.now();
       const cachedTrie = await this.idb.get(this.config.trieCacheKey);
@@ -726,13 +927,47 @@ export class AutocompleteEngine {
 
   recordRecentWord(word) {
     this.recentWords.record(word);
+
+    // Feed the bigram model from the same call, in typing order, so host
+    // apps get next-word prediction "for free" just by calling
+    // recordRecentWord() per completed word the way they already do.
+    const clean = typeof word === 'string' ? word.trim().toLowerCase() : '';
+    if (clean.length >= 2 && clean.length <= this.config.maxWordLength) {
+      if (this._lastRecordedWord && this._lastRecordedWord !== clean) {
+        this.bigramModel.record(this._lastRecordedWord, clean);
+      }
+      this._lastRecordedWord = clean;
+    }
+  }
+
+  /**
+   * Call this when the typing sequence is no longer contiguous — e.g. the
+   * user clicked elsewhere in the document, loaded a different file, or a
+   * large paste happened. Prevents an unrelated (prevWord -> nextWord)
+   * pair from being recorded into the bigram model.
+   */
+  resetSequenceContext() {
+    this._lastRecordedWord = null;
   }
 
   /**
    * Extracts a ghost-text suggestion for the current cursor position.
-   * Prioritizes recent words (frequency+recency ranked), falling back to
-   * the full dictionary trie. Returns null inside math/LaTeX regions or
-   * when no valid completion exists.
+   *
+   * Two modes, chosen automatically based on cursor position:
+   *  - Mid-word (cursor right after letters): completes the word being
+   *    typed, prioritizing recent words (frequency+recency ranked) and
+   *    falling back to the full dictionary trie. This intentionally does
+   *    NOT fire next-word prediction, since a word like "hat" could still
+   *    extend to "hats"/"hate" — matching standard predictive-keyboard
+   *    behavior.
+   *  - Word boundary (cursor right after whitespace): predicts the next
+   *    word using (previous word -> next word) history, personalized from
+   *    this user's own typing and falling back to a small baseline model.
+   *
+   * Returns null inside math/LaTeX regions or when no valid suggestion exists.
+   * The returned shape is the same for both modes (`prefix`/`suffix`/
+   * `fullWord`/`startPos`/`endPos`) so existing ghost-text rendering code
+   * needs no changes; `type` additionally distinguishes the two if useful.
    *
    * @param {string} fullText
    * @param {number} cursorIndex
@@ -753,6 +988,14 @@ export class AutocompleteEngine {
     // Skip if current line has an in-progress LaTeX slash command.
     if (/\\[a-zA-Z]*$/.test(currentLineBefore)) return null;
 
+    const atWordBoundary = currentLineBefore.length === 0 || /\s$/.test(currentLineBefore);
+    if (atWordBoundary) {
+      return this._getNextWordSuggestion(currentLineBefore, cursorIndex);
+    }
+    return this._getCompletionSuggestion(currentLineBefore, cursorIndex);
+  }
+
+  _getCompletionSuggestion(currentLineBefore, cursorIndex) {
     const match = currentLineBefore.match(this._prefixRegex);
     if (!match) return null;
 
@@ -787,6 +1030,7 @@ export class AutocompleteEngine {
     }
 
     return {
+      type: 'completion',
       prefix: rawPrefix,
       suffix: formattedSuffix,
       fullWord: formattedFullWord,
@@ -795,9 +1039,34 @@ export class AutocompleteEngine {
     };
   }
 
+  _getNextWordSuggestion(currentLineBefore, cursorIndex) {
+    // Find the word immediately before the trailing whitespace, e.g. for
+    // "the blue hat " this pulls out "hat".
+    const trimmed = currentLineBefore.replace(/\s+$/, '');
+    const match = trimmed.match(this._prefixRegex);
+    if (!match) return null;
+
+    const prevWord = match[1].toLowerCase();
+    const suggestions = this.bigramModel.suggest(prevWord, 1);
+    if (!suggestions || suggestions.length === 0) return null;
+
+    const nextWord = suggestions[0];
+    if (!nextWord) return null;
+
+    return {
+      type: 'next-word',
+      prefix: '',
+      suffix: nextWord,
+      fullWord: nextWord,
+      startPos: cursorIndex,
+      endPos: cursorIndex,
+    };
+  }
+
   /** Releases timers/channels. Call on app teardown or in test cleanup. */
   dispose() {
     this.recentWords.dispose();
+    this.bigramModel.dispose();
   }
 }
 
@@ -845,6 +1114,16 @@ export function getGhostSuggestion(fullText, cursorIndex) {
 
 export function getAutocompleteState() {
   return defaultEngine.getState();
+}
+
+/**
+ * Call this whenever the typing sequence is no longer contiguous — e.g. the
+ * user focused a different note/block, or the cursor jumped somewhere
+ * unrelated. Prevents the bigram model from learning a nonsense (prevWord ->
+ * nextWord) pair stitched across two unrelated pieces of text.
+ */
+export function resetSequenceContext() {
+  return defaultEngine.resetSequenceContext();
 }
 
 export function onAutocompleteEvent(event, fn) {

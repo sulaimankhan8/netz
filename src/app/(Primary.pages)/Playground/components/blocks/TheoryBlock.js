@@ -4,7 +4,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import 'katex/dist/katex.min.css';
 import { InlineMath } from 'react-katex';
 import { FiEdit2, FiCheck, FiList, FiCheckSquare, FiBold, FiItalic } from 'react-icons/fi';
-import { getGhostSuggestion, initAutocompleteTrie, recordRecentWord } from '../../utils/autocompleteTrie';
+import {
+  getGhostSuggestion,
+  initAutocompleteTrie,
+  recordRecentWord,
+  resetSequenceContext,
+} from '../../utils/autocompleteTrie';
 
 /**
  * TheoryBlock — Rich Text Notes Block
@@ -12,6 +17,7 @@ import { getGhostSuggestion, initAutocompleteTrie, recordRecentWord } from '../.
  * Upgraded from single-line input to a professional multi-line text editor with:
  * - Multi-line textarea that auto-resizes to content
  * - English word ghost-text autocomplete with [Tab] pill hint (backed by Trie + 7-day IndexedDB cache)
+ * - Next-word prediction after a completed word (personalized bigram model + baseline)
  * - Bullet lists (lines starting with "- " or "• ")
  * - Checkboxes (lines starting with "[ ] " or "[x] ")
  * - Inline KaTeX math rendering ($...$)
@@ -101,7 +107,8 @@ export default function TheoryBlock({ block, onUpdateContent }) {
   };
 
   /**
-   * Accepts the active ghost suggestion.
+   * Accepts the active ghost suggestion (works for both mid-word completion
+   * and next-word prediction — both share the same {suffix, endPos} shape).
    */
   const acceptSuggestion = () => {
     if (!suggestion || !textareaRef.current) return false;
@@ -111,7 +118,8 @@ export default function TheoryBlock({ block, onUpdateContent }) {
     const newText = text.substring(0, endPos) + suffix + text.substring(endPos);
     const newCursorPos = endPos + suffix.length;
 
-    // Record accepted word to 5,000 Recent Words LRU cache
+    // Record accepted word to the recent-words LRU cache and the
+    // personalized next-word (bigram) model in one call.
     if (suggestion.fullWord) {
       recordRecentWord(suggestion.fullWord);
     }
@@ -380,6 +388,13 @@ export default function TheoryBlock({ block, onUpdateContent }) {
               onChange={(e) => {
                 handleChange(e.target.value, e.target.selectionStart);
               }}
+              onFocus={() => {
+                // A new editing session is starting on this block. Reset the
+                // engine's (prevWord -> nextWord) chain so it doesn't stitch
+                // the last word of whatever was edited previously (this
+                // block or another one) onto the first word typed now.
+                resetSequenceContext();
+              }}
               onClick={(e) => {
                 updateSuggestion(text, e.target.selectionStart);
               }}
@@ -390,7 +405,18 @@ export default function TheoryBlock({ block, onUpdateContent }) {
               onBlur={() => {
                 setSuggestion(null);
                 if (text.trim()) {
-                  const words = text.match(/[a-zA-Z]{3,}/g) || [];
+                  // Replay the block's own words in document order to seed
+                  // the recent-words cache and personalized next-word model.
+                  // Start from a clean sequence boundary (see onFocus) so
+                  // this replay can't be chained onto a previous session.
+                  resetSequenceContext();
+                  // 2+ chars, not 3+: this needs to include short but very
+                  // common words ("to", "is", "in", "on", "of", "it", "we",
+                  // "he", ...) because those are exactly the words the
+                  // next-word prediction model keys its lookups on. Filtering
+                  // them out here meant personalization could never kick in
+                  // for the most frequent transition words in English.
+                  const words = text.match(/[a-zA-Z]{2,}/g) || [];
                   for (let i = 0; i < words.length; i++) {
                     recordRecentWord(words[i]);
                   }
