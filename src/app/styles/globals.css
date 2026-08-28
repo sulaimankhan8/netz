@@ -22,6 +22,25 @@ body.dark, html.dark {
   background-color: #fff;
 }
 
+/* ================= FOCUS MODE / FULLSCREEN OVERRIDES ================= */
+html.netz-focus-mode,
+body.netz-focus-mode,
+:fullscreen {
+  overflow-y: auto !important;
+}
+
+div[data-focus-mode="true"] .md\:ml-\[80px\],
+div[data-focus-mode="true"] .md\:ml-\[72px\],
+div[data-focus-mode="true"] .lg\:ml-\[72px\],
+html.netz-focus-mode .md\:ml-\[80px\],
+html.netz-focus-mode .md\:ml-\[72px\],
+html.netz-focus-mode .lg\:ml-\[72px\],
+:fullscreen .md\:ml-\[80px\],
+:fullscreen .md\:ml-\[72px\],
+:fullscreen .lg\:ml-\[72px\] {
+  margin-left: 0 !important;
+}
+
 /* ================= THEME TOGGLE ANIMATIONS ================= */
 @keyframes twinkle {
   0%, 100% {

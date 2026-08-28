@@ -88,17 +88,43 @@ export default function NewtonBackwardInterpolations({ theme }) {
 
   const handleDemo = () => {
     setDemoInProgress(true);
-    setRows([
+    const demoRows = [
       { x: "10", y: "0.1736" },
       { x: "20", y: "0.3420" },
       { x: "30", y: "0.5000" },
       { x: "40", y: "0.6428" },
-    ]);
-    setInterpolateX("38");
-    setTimeout(() => {
-      handleSubmit();
-      setDemoInProgress(false);
-    }, 100);
+    ];
+    const demoX = "38";
+
+    setRows(demoRows);
+    setInterpolateX(demoX);
+
+    const points = demoRows.map((row) => ({ x: parseFloat(row.x), y: parseFloat(row.y) }));
+    const xToInterpolate = parseFloat(demoX);
+
+    const {
+      interpolatedValue,
+      diffTable: computedTable,
+      stepFormulas,
+      stepSubstituted,
+      stepCalculated,
+      vSteps: calculatedVSteps,
+    } = newtonBackwardInterpolation(points, xToInterpolate);
+
+    const minX = Math.min(...points.map((p) => p.x)) - 5;
+    const maxX = Math.max(...points.map((p) => p.x)) + 5;
+    setXRange(Array.from({ length: 100 }, (_, i) => minX + (i * (maxX - minX)) / 99));
+
+    setOutput(`f(${xToInterpolate}) = ${interpolatedValue.toFixed(6)}`);
+    setDiffTable(computedTable);
+    setPolynomialSteps({
+      formulas: stepFormulas,
+      substituted: stepSubstituted,
+      calculated: stepCalculated,
+      final: `f(${xToInterpolate}) = ${interpolatedValue.toFixed(6)}`,
+    });
+    setVSteps(calculatedVSteps);
+    setDemoInProgress(false);
   };
 
   const handleReset = () => {

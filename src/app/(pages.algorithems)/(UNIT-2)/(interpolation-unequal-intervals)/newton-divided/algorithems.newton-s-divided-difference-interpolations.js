@@ -85,17 +85,41 @@ export default function NewtonDividedDifference({ theme }) {
 
   const handleDemo = () => {
     setDemoInProgress(true);
-    setRows([
+    const demoRows = [
       { x: "5", y: "12" },
       { x: "7", y: "15" },
       { x: "11", y: "21" },
       { x: "13", y: "27" },
-    ]);
-    setInterpolateX("10");
-    setTimeout(() => {
-      handleSubmit();
-      setDemoInProgress(false);
-    }, 100);
+    ];
+    const demoX = "10";
+
+    setRows(demoRows);
+    setInterpolateX(demoX);
+
+    const points = demoRows.map((row) => ({ x: parseFloat(row.x), y: parseFloat(row.y) }));
+    const xToInterpolate = parseFloat(demoX);
+
+    const {
+      interpolatedValue,
+      diffTable: computedTable,
+      stepFormulas,
+      stepSubstituted,
+      stepCalculated,
+    } = newtonDividedDifference(points, xToInterpolate);
+
+    const minX = Math.min(...points.map((p) => p.x)) - 5;
+    const maxX = Math.max(...points.map((p) => p.x)) + 5;
+    setXRange(Array.from({ length: 100 }, (_, i) => minX + (i * (maxX - minX)) / 99));
+
+    setOutput(`f(${xToInterpolate}) = ${interpolatedValue.toFixed(6)}`);
+    setDiffTable(computedTable);
+    setPolynomialSteps({
+      formulas: stepFormulas,
+      substituted: stepSubstituted,
+      calculated: stepCalculated,
+      final: `f(${xToInterpolate}) = ${interpolatedValue.toFixed(6)}`,
+    });
+    setDemoInProgress(false);
   };
 
   const handleReset = () => {

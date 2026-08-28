@@ -20,6 +20,7 @@ const NewtonRaphsonMethod = () => {
   const [error, setError] = useState('');
   const [derivativeText, setDerivativeText] = useState('');
   const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
+  const [showAllSteps, setShowAllSteps] = useState(false);
 
   const evaluateFunction = (fStr, xVal) => {
     try {
@@ -157,10 +158,55 @@ const NewtonRaphsonMethod = () => {
 
   const handleDemo = () => {
     setDemoInProgress(true);
-    setExpression("x * x * x - 4 * x - 9");
-    setInitialGuess("2.5");
-    setTolerance(0.0001);
-    handleCalculateRoot();
+    const demoExpr = "x * x * x - 4 * x - 9";
+    const demoX0 = "2.5";
+    const demoTol = 0.0001;
+
+    setExpression(demoExpr);
+    setInitialGuess(demoX0);
+    setTolerance(demoTol);
+    setError('');
+
+    let dfStr = '';
+    try {
+      dfStr = getSymbolicDerivative(demoExpr);
+      setDerivativeText(dfStr);
+    } catch {
+      setError("Failed to generate symbolic derivative.");
+      setDemoInProgress(false);
+      return;
+    }
+
+    let currentX = parseFloat(demoX0);
+    const maxIter = 50;
+    const iterations = [];
+    const stepsLog = [];
+    let converged = false;
+
+    for (let i = 1; i <= maxIter; i++) {
+      const fx = evaluateFunction(demoExpr, currentX);
+      const fpx = evaluateFunction(dfStr, currentX);
+
+      if (fx === null || fpx === null || Math.abs(fpx) < 1e-12) break;
+
+      const nextX = currentX - fx / fpx;
+      iterations.push({ iteration: i, x: currentX, fx, fpx, nextX });
+      stepsLog.push({ iteration: i, x: currentX, fx, fpx, nextX });
+
+      if (Math.abs(nextX - currentX) < demoTol || Math.abs(fx) < demoTol) {
+        converged = true;
+        setResult(`Newton-Raphson converged to root x = ${nextX.toFixed(6)} in ${i} iterations`);
+        break;
+      }
+      currentX = nextX;
+    }
+
+    if (!converged && iterations.length > 0) {
+      setResult(`Max iterations reached. Approximate root at x = ${currentX.toFixed(6)}`);
+    }
+
+    setTableResults(iterations);
+    setStepDetails(stepsLog);
     setDemoInProgress(false);
   };
 
@@ -415,32 +461,75 @@ const NewtonRaphsonMethod = () => {
           )}
 
           {(viewTab === 'all' || viewTab === 'steps') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Tangent Slopes
-              </h4>
+            <div id="newton-steps-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Tangent Slopes ({stepDetails.length} Total Steps)
+                </h4>
+                <div className="flex items-center gap-2">
+                  {stepDetails.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(!showAllSteps)}
+                      className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border border-black/30 dark:border-neutral-600 rounded-lg text-xs font-mono font-bold uppercase transition-all"
+                    >
+                      {showAllSteps ? 'Show First 5 Steps' : `Show All ${stepDetails.length} Steps`}
+                    </button>
+                  )}
+                  <EditorialExportButton
+                    title="Newton-Raphson Steps"
+                    targetId="newton-steps-container"
+                    label="Export Steps"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
+              </div>
 
               <div className="space-y-3">
-                {stepDetails.slice(0, 5).map((step, index) => (
+                {(showAllSteps ? stepDetails : stepDetails.slice(0, 5)).map((step, index) => (
                   <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
                     <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400">
                       <span>Iteration {step.iteration}</span>
-                      <span>Tangent Intersect</span>
+                      <span>Tangent Intersect Calculation</span>
                     </div>
                     <div className="overflow-x-auto text-center py-1">
-                      <BlockMath math={`x_{${step.iteration}} = ${step.x.toFixed(6)} - \\frac{${step.fx.toFixed(6)}}{${step.fpx.toFixed(6)}} = ${step.nextX.toFixed(6)}`} />
+                      <BlockMath math={`x_{${step.iteration}} = x_{${step.iteration - 1}} - \\frac{f(x_{${step.iteration - 1}})}{f'(x_{${step.iteration - 1}})} = ${step.x.toFixed(6)} - \\frac{${step.fx.toFixed(6)}}{${step.fpx.toFixed(6)}} = ${step.nextX.toFixed(6)}`} />
+                    </div>
+                    <div className="text-xs font-mono text-neutral-600 dark:text-neutral-300 text-center">
+                      <InlineMath math={`f(x) = ${step.fx.toFixed(6)}, \\quad f'(x) = ${step.fpx.toFixed(6)}`} />
                     </div>
                   </div>
                 ))}
+                {!showAllSteps && stepDetails.length > 5 && (
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(true)}
+                      className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Click to expand and view remaining {stepDetails.length - 5} step derivations...
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {(viewTab === 'all' || viewTab === 'plot') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Tangent Intersect Plot
-              </h4>
+            <div id="newton-plot-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Tangent Intersect Plot
+                </h4>
+                <EditorialExportButton
+                  title="Newton-Raphson Graph Plot"
+                  targetId="newton-plot-container"
+                  label="Export Graph"
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
 
               <div id="graphCanvas" className="w-full">
                 <UnifiedPlot

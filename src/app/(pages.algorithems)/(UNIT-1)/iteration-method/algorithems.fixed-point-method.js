@@ -9,22 +9,23 @@ import { EditorialButton, EditorialExportButton } from '@/app/components/editori
 import { FiPlay, FiRotateCcw, FiCheckCircle, FiTrendingUp, FiLayers, FiList, FiAlertCircle } from 'react-icons/fi';
 
 const FixedPointMethod = () => {
-  const [functionInput, setFunctionInput] = useState("cos(x)"); // Default function
-  const [initialGuess, setInitialGuess] = useState(''); // Initial guess as string to allow empty
+  const [functionInput, setFunctionInput] = useState("cos(x)");
+  const [initialGuess, setInitialGuess] = useState('');
   const [tolerance, setTolerance] = useState(0.00001);
   const [result, setResult] = useState(null);
   const [iterationSteps, setIterationSteps] = useState([]);
   const [error, setError] = useState('');
   const [demoInProgress, setDemoInProgress] = useState(false);
-  const [intervalFound, setIntervalFound] = useState(null); // To store detected interval
+  const [intervalFound, setIntervalFound] = useState(null);
+  const [showAllSteps, setShowAllSteps] = useState(false);
+  const [viewTab, setViewTab] = useState('all');
 
-  // Handle input changes
   const handleFunctionChange = (e) => {
     setFunctionInput(e.target.value);
   };
 
   const handleInitialGuessChange = (e) => {
-    setInitialGuess(e.target.value); // Keep as string to allow empty
+    setInitialGuess(e.target.value);
   };
 
   const handleToleranceChange = (e) => {
@@ -36,22 +37,6 @@ const FixedPointMethod = () => {
     }
   };
 
-  const functionMapping = {
-    'sin': 'Math.sin',
-    'cos': 'Math.cos',
-    'tan': 'Math.tan',
-    'sec': '1/Math.cos',
-    'cot': '1/Math.tan',
-    'cosec': '1/Math.sin'
-  };
-  
-  // Function to replace simple function names with full JavaScript syntax
-  const replaceFunctions = (input) => {
-    return input.replace(/(\w+)\(/g, (match, p1) => {
-      return functionMapping[p1] ? `${functionMapping[p1]}(` : match;
-    });
-  };
-  // Function to find intervals where g(x) - x changes sign
   const findIntervals = (g, min = -100, max = 100, step = 1) => {
     const intervals = [];
     let a = min;
@@ -60,7 +45,6 @@ const FixedPointMethod = () => {
     for (let x = a + step; x <= max; x += step) {
       let fx = g(x) - x;
       if (isNaN(fx)) {
-        // Skip if g(x) is not defined
         a = x;
         fa = fx;
         continue;
@@ -75,7 +59,6 @@ const FixedPointMethod = () => {
     return intervals;
   };
 
-  // Fixed-Point Iteration Implementation
   const fixedPointIteration = (g, x0, tol = 0.00001, maxIter = 100) => {
     let iterations = [];
     let x = x0;
@@ -123,15 +106,15 @@ const FixedPointMethod = () => {
     };
   };
 
-  // Handle form submission
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     setError('');
     setResult(null);
     setIterationSteps([]);
     setIntervalFound(null);
 
-    // Convert user input to a function
     let g;
     try {
       g = parseUserFunction(functionInput.trim());
@@ -143,27 +126,23 @@ const FixedPointMethod = () => {
 
     let x0;
     if (initialGuess.trim() !== '') {
-      // User provided an initial guess
       x0 = parseFloat(initialGuess);
       if (isNaN(x0)) {
         setError("Initial guess must be a valid number.");
         return;
       }
     } else {
-      // User did not provide an initial guess, find intervals
       const intervals = findIntervals(g);
       if (intervals.length === 0) {
         setError("Could not find an interval where g(x) - x changes sign. Please provide an initial guess.");
         return;
       }
-      // For simplicity, take the first interval and use the midpoint as x0
       const [a, b] = intervals[0];
       setIntervalFound([a, b]);
       x0 = (a + b) / 2;
     }
 
-    // Perform fixed-point iteration
-    const iterationResult = fixedPointIteration(g, x0, tolerance, 100); // maxIter is set to 100
+    const iterationResult = fixedPointIteration(g, x0, tolerance, 100);
 
     if (iterationResult.error) {
       setError(iterationResult.error);
@@ -176,14 +155,37 @@ const FixedPointMethod = () => {
 
   const handleDemo = () => {
     setDemoInProgress(true);
-    setFunctionInput("cos(x)");
-    setInitialGuess("1");
-    setTolerance(0.00001);
-    // Trigger submission
-    setTimeout(() => {
-        handleSubmit();
-        setDemoInProgress(false);
-    }, 100);
+    const demoFn = "cos(x)";
+    const demoX0Str = "1";
+    const demoTol = 0.00001;
+
+    setFunctionInput(demoFn);
+    setInitialGuess(demoX0Str);
+    setTolerance(demoTol);
+    setError('');
+
+    let g;
+    try {
+      g = parseUserFunction(demoFn);
+      g(0);
+    } catch {
+      setError("Invalid demo expression.");
+      setDemoInProgress(false);
+      return;
+    }
+
+    const x0 = parseFloat(demoX0Str);
+    const iterationResult = fixedPointIteration(g, x0, demoTol);
+
+    if (iterationResult.error) {
+      setError(iterationResult.error);
+      setDemoInProgress(false);
+      return;
+    }
+
+    setResult(`Fixed-point root converged to x = ${(iterationResult.root !== null && iterationResult.root !== undefined) ? iterationResult.root.toFixed(8) : x0.toFixed(8)} in ${iterationResult.iterations} iterations`);
+    setIterationSteps(iterationResult.steps);
+    setDemoInProgress(false);
   };
 
   const handleReset = () => {
@@ -425,32 +427,75 @@ const FixedPointMethod = () => {
           )}
 
           {(viewTab === 'all' || viewTab === 'steps') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Function Substitution
-              </h4>
+            <div id="fixed-point-steps-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Function Substitution ({iterationSteps.length} Total Steps)
+                </h4>
+                <div className="flex items-center gap-2">
+                  {iterationSteps.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(!showAllSteps)}
+                      className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border border-black/30 dark:border-neutral-600 rounded-lg text-xs font-mono font-bold uppercase transition-all"
+                    >
+                      {showAllSteps ? 'Show First 5 Steps' : `Show All ${iterationSteps.length} Steps`}
+                    </button>
+                  )}
+                  <EditorialExportButton
+                    title="Fixed Point Iteration Steps"
+                    targetId="fixed-point-steps-container"
+                    label="Export Steps"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
+              </div>
 
               <div className="space-y-3">
-                {iterationSteps.slice(0, 5).map((step, index) => (
+                {(showAllSteps ? iterationSteps : iterationSteps.slice(0, 5)).map((step, index) => (
                   <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
                     <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400">
                       <span>Iteration {step.iter}</span>
                       <span>Next Approximation</span>
                     </div>
                     <div className="overflow-x-auto text-center py-1">
-                      <BlockMath math={`x^{(${step.iter + 1})} = g(${step.x_n.toFixed(8)}) = ${step.x_next.toFixed(8)}`} />
+                      <BlockMath math={`x^{(${step.iter})} = g(x^{(${step.iter - 1})}) = g(${step.x_n.toFixed(6)}) = ${step.x_next.toFixed(6)}`} />
+                    </div>
+                    <div className="text-xs font-mono text-neutral-600 dark:text-neutral-300 text-center">
+                      <InlineMath math={`|x_{${step.iter}} - x_{${step.iter - 1}}| = ${Math.abs(step.x_next - step.x_n).toFixed(6)}`} />
                     </div>
                   </div>
                 ))}
+                {!showAllSteps && iterationSteps.length > 5 && (
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(true)}
+                      className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Click to expand and view remaining {iterationSteps.length - 5} step derivations...
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {(viewTab === 'all' || viewTab === 'plot') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Iteration Cobweb Plot
-              </h4>
+            <div id="fixed-point-plot-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Iteration Cobweb Plot
+                </h4>
+                <EditorialExportButton
+                  title="Fixed Point Graph Plot"
+                  targetId="fixed-point-plot-container"
+                  label="Export Graph"
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
 
               <div id="graphCanvas" className="w-full">
                 <UnifiedPlot

@@ -112,7 +112,7 @@ export default function GaussForwardInterpolation({ theme }) {
     setInterpolatedValue(interpVal);
   };
 
-  const handleDemo = async () => {
+  const handleDemo = () => {
     setDemoInProgress(true);
     const demoX = [2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
     const demoY = [24.145, 22.043, 20.225, 18.644, 17.262, 16.047];
@@ -122,39 +122,36 @@ export default function GaussForwardInterpolation({ theme }) {
     setRows(newRows);
     setInterpolateX(String(demoInterpolateX));
 
-    // Submit calculation
-    setTimeout(() => {
-      const points = demoX.map((xi, i) => ({ x: xi, y: demoY[i] }));
-      const midp = midPoint(points, demoInterpolateX);
-      setMid(midp);
+    const points = demoX.map((xi, i) => ({ x: xi, y: demoY[i] }));
+    const midp = midPoint(points, demoInterpolateX);
+    setMid(midp);
 
-      const {
-        interpolatedValue: interpVal,
-        diffTable: dTable,
-        stepFormulas,
-        stepSubstituted,
-        stepCalculated,
-        vSteps: stepsV,
-      } = gaussianFowardInterpolation(points, demoInterpolateX, midp);
+    const {
+      interpolatedValue: interpVal,
+      diffTable: dTable,
+      stepFormulas,
+      stepSubstituted,
+      stepCalculated,
+      vSteps: stepsV,
+    } = gaussianFowardInterpolation(points, demoInterpolateX, midp);
 
-      const minX = Math.min(...demoX) - 1;
-      const maxX = Math.max(...demoX) + 1;
-      setXRange(
-        Array.from({ length: 100 }, (_, i) => minX + i * (maxX - minX) / 99)
-      );
+    const minX = Math.min(...demoX) - 1;
+    const maxX = Math.max(...demoX) + 1;
+    setXRange(
+      Array.from({ length: 100 }, (_, i) => minX + i * (maxX - minX) / 99)
+    );
 
-      setVSteps(stepsV);
-      setDiffTable(dTable);
-      setPolynomialSteps({
-        formulas: stepFormulas,
-        substituted: stepSubstituted,
-        calculated: stepCalculated,
-        final: `Interpolated value at x = ${demoInterpolateX}: P(${demoInterpolateX}) = ${interpVal.toFixed(6)}`,
-      });
-      setOutput(`Interpolated value at x = ${demoInterpolateX}: P(${demoInterpolateX}) = ${interpVal.toFixed(6)}`);
-      setInterpolatedValue(interpVal);
-      setDemoInProgress(false);
-    }, 300);
+    setVSteps(stepsV);
+    setDiffTable(dTable);
+    setPolynomialSteps({
+      formulas: stepFormulas,
+      substituted: stepSubstituted,
+      calculated: stepCalculated,
+      final: `Interpolated value at x = ${demoInterpolateX}: P(${demoInterpolateX}) = ${interpVal.toFixed(6)}`,
+    });
+    setOutput(`Interpolated value at x = ${demoInterpolateX}: P(${demoInterpolateX}) = ${interpVal.toFixed(6)}`);
+    setInterpolatedValue(interpVal);
+    setDemoInProgress(false);
   };
 
   // Convert difference table to JSON/CSV export format

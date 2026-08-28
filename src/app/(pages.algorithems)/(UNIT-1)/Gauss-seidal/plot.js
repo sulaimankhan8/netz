@@ -42,7 +42,7 @@ const Plot = ({ iterations, darkTheme }) => {
           font: {
             size: 15, // Set font size for the legend
           },
-          color: darkTheme ? 'gray-800' : 'black',
+          color: darkTheme ? '#f3f4f6' : '#111827',
         },
       },
       tooltip: {

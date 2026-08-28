@@ -8,7 +8,10 @@ import { exportAsPNG, exportAsSVG, exportAsPDF } from '@/app/utils/exportEngine'
 
 export default function EditorialExportButton({
   targetId,
+  elementId,
   fileName = 'report',
+  title,
+  exportData,
   label = 'Export',
   variant = 'secondary',
   size = 'sm',
@@ -17,6 +20,10 @@ export default function EditorialExportButton({
   tooltipText = 'Export section or calculation sheet',
   className = ''
 }) {
+  const activeTargetId = targetId || elementId;
+  const activeFileName = fileName !== 'report' ? fileName : (title ? title.toLowerCase().replace(/\s+/g, '_') : 'report');
+  const activeData = data || exportData;
+
   const [modalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [quickExporting, setQuickExporting] = useState(false);
@@ -26,11 +33,11 @@ export default function EditorialExportButton({
     setQuickExporting(true);
     try {
       if (format === 'svg') {
-        await exportAsSVG(targetId, { fileName: `${fileName}.svg` });
+        await exportAsSVG(activeTargetId, { fileName: `${activeFileName}.svg` });
       } else if (format === 'pdf') {
-        await exportAsPDF(targetId, { fileName: `${fileName}.pdf` });
+        await exportAsPDF(activeTargetId, { fileName: `${activeFileName}.pdf` });
       } else {
-        await exportAsPNG(targetId, { fileName: `${fileName}.png`, pixelRatio: 2 });
+        await exportAsPNG(activeTargetId, { fileName: `${activeFileName}.png`, pixelRatio: 2 });
       }
     } catch (e) {
       console.error(e);
@@ -127,10 +134,10 @@ export default function EditorialExportButton({
       <EditorialExportModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        defaultTargetId={targetId}
+        defaultTargetId={activeTargetId}
         availableSections={availableSections}
-        data={data}
-        baseFileName={fileName}
+        data={activeData}
+        baseFileName={activeFileName}
       />
     </>
   );

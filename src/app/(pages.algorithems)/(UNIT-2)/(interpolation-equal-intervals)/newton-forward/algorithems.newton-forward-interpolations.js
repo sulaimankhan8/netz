@@ -98,38 +98,45 @@ export default function NewtonForwardInterpolations({ theme }) {
   };
   const xValues = rows.map((row) => parseFloat(row.x));
 
-  const handleDemo = async () => {
-    const demoX = [ 1, 2, 3, 4];
-    const demoY = [ 2, 5, 10, 17];
-    const demoInterpolateX = 2.5;
-  
-    setDemoInProgress(true);
-  
-    // Simulate filling the rows with demo data
-    for (let i = 0; i < demoX.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-  
-      setRows((prevRows) => {
-        const newRows = [...prevRows];
-        if (newRows[i]) {
-          newRows[i].x = demoX[i];
-          newRows[i].y = demoY[i];
-        } else {
-          newRows.push({ x: demoX[i], y: demoY[i] });
-        }
-        return newRows;
-      });
-    }
-  
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  const handleDemo = () => {
+    const demoRows = [
+      { x: "1", y: "2" },
+      { x: "2", y: "5" },
+      { x: "3", y: "10" },
+      { x: "4", y: "17" }
+    ];
+    const demoInterpolateX = "2.5";
+
+    setRows(demoRows);
     setInterpolateX(demoInterpolateX);
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    document.getElementById("interpolateButton").click();
-   
-    handleSubmit({ preventDefault: () => {} });
-  
-    setDemoInProgress(false);
+    const points = demoRows.map((row) => ({ x: parseFloat(row.x), y: parseFloat(row.y) }));
+    const x = parseFloat(demoInterpolateX);
+    const {
+      interpolatedValue,
+      diffTable,
+      stepFormulas,
+      stepSubstituted,
+      stepCalculated,
+      vSteps,
+    } = newtonForwardInterpolation(points, x);
+
+    const xValues = points.map((p) => p.x);
+    const minX = Math.min(...xValues) - 5;
+    const maxX = Math.max(...xValues) + 5;
+    setXRange(
+      Array.from({ length: 100 }, (_, i) => minX + i * (maxX - minX) / 99)
+    );
+
+    setVSteps(vSteps);
+    setDiffTable(diffTable);
+    setPolynomialSteps({
+      formulas: stepFormulas,
+      substituted: stepSubstituted,
+      calculated: stepCalculated,
+      final: `Interpolated value at x = ${x}: P(${x}) = ${interpolatedValue}`,
+    });
+    setOutput(`Interpolated value at x = ${x}: P(${x}) = ${interpolatedValue}`);
   };
   
   return (

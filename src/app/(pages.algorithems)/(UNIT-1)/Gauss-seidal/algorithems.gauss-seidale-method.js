@@ -35,6 +35,7 @@ const GaussSeidel = () => {
   const [iterationDetails2, setIterationDetails2] = useState([]);
   const [iterationDetails3, setIterationDetails3] = useState([]);
   const [checkError, setCheckError] = useState('');
+  const [showAllSteps, setShowAllSteps] = useState(false);
 
 
   const [variableSequence, setVariableSequence] = useState([]); // To track variable sequence
@@ -81,22 +82,28 @@ const GaussSeidel = () => {
 
 
   // Handle Demo button click
-  const handleDemo = async () => {
+  const handleDemo = () => {
     setDemoInProgress(true);
-    setEquations([
+    const demoEqs = [
       { a: 10, b: 2, c: 1, constant: 27 },
       { a: 3, b: 8, c: 2, constant: 45 },
       { a: 1, b: -1, c: 5, constant: 13 },
-    ]);
+    ];
+    const demoErr = 0.0001;
 
-    setError(0.0001);
+    setEquations(demoEqs);
+    setError(demoErr);
+    setCheckError('');
 
-    // Wait for equations to update
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Trigger calculation
-    document.getElementById("Calculate").click();
-
+    const { validatedEquations, errorMessage, sequence } = checkEquations(demoEqs);
+    if (!errorMessage) {
+      setVariableSequence(sequence);
+      const { iterations, iterationsteps, iterationsteps2, iterationsteps3 } = GaussSeidels(validatedEquations, demoErr);
+      setResults(iterations);
+      setIterationDetails(iterationsteps);
+      setIterationDetails2(iterationsteps2);
+      setIterationDetails3(iterationsteps3);
+    }
     setDemoInProgress(false);
   };
 
@@ -363,32 +370,72 @@ const GaussSeidel = () => {
           )}
 
           {(viewTab === 'all' || viewTab === 'steps') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Component Updates
-              </h4>
+            <div id="gauss-seidel-steps-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Component Updates ({iterationDetails.length} Total Iterations)
+                </h4>
+                <div className="flex items-center gap-2">
+                  {iterationDetails.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(!showAllSteps)}
+                      className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border border-black/30 dark:border-neutral-600 rounded-lg text-xs font-mono font-bold uppercase transition-all"
+                    >
+                      {showAllSteps ? 'Show First 5 Iterations' : `Show All ${iterationDetails.length} Iterations`}
+                    </button>
+                  )}
+                  <EditorialExportButton
+                    title="Gauss-Seidel Steps"
+                    targetId="gauss-seidel-steps-container"
+                    label="Export Steps"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
+              </div>
 
               <div className="space-y-3">
-                {iterationDetails.slice(0, 4).map((step, index) => (
+                {(showAllSteps ? iterationDetails : iterationDetails.slice(0, 5)).map((step, index) => (
                   <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
                     <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400">
                       <span>Iteration {index + 1}</span>
-                      <span>Updated Variables</span>
+                      <span>Updated Variable Derivations</span>
                     </div>
                     <div className="overflow-x-auto text-center py-1 font-mono text-xs">
                       <BlockMath math={`${step} \\quad , \\quad ${iterationDetails2[index]} \\quad , \\quad ${iterationDetails3[index]}`} />
                     </div>
                   </div>
                 ))}
+                {!showAllSteps && iterationDetails.length > 5 && (
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(true)}
+                      className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Click to expand and view remaining {iterationDetails.length - 5} iteration derivations...
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {(viewTab === 'all' || viewTab === 'plot') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Convergence Trajectory Plot
-              </h4>
+            <div id="gauss-seidel-plot-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Convergence Trajectory Plot
+                </h4>
+                <EditorialExportButton
+                  title="Gauss-Seidel Convergence Plot"
+                  targetId="gauss-seidel-plot-container"
+                  label="Export Graph"
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
 
               <div id="graphCanvas" className="w-full">
                 <Plot iterations={results} />

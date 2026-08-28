@@ -10,16 +10,16 @@ import { FiPlay, FiRotateCcw, FiCheckCircle, FiTrendingUp, FiLayers, FiList, FiA
 
 const FalsePositionMethod = () => {
   const [demoInProgress, setDemoInProgress] = useState(false);
-  const [functionInput, setFunctionInput] = useState("x^2 - 4"); // Default function
+  const [functionInput, setFunctionInput] = useState("x^2 - 4");
   const [tolerance, setTolerance] = useState(0.0001);
   const [result, setResult] = useState(null);
   const [intervalSteps, setIntervalSteps] = useState([]);
   const [falsePositionIterations, setFalsePositionIterations] = useState([]);
   const [error, setError] = useState('');
   const [iterationsCount, setIterationsCount] = useState(0);
-  const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
+  const [viewTab, setViewTab] = useState('all');
+  const [showAllSteps, setShowAllSteps] = useState(false);
 
-  // Handle input changes
   const handleFunctionChange = (e) => {
     setFunctionInput(e.target.value);
   };
@@ -33,41 +33,6 @@ const FalsePositionMethod = () => {
     }
   };
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e?.preventDefault();
-    setError('');
-    setResult(null);
-    setIntervalSteps([]);
-    setFalsePositionIterations([]);
-    setIterationsCount(0);
-
-    let f;
-    try {
-      f = parseUserFunction(functionInput);
-      f(0);
-    } catch (err) {
-      setError("Invalid function input. Please enter a valid mathematical expression like x^2 - 4.");
-      return;
-    }
-
-    const { interval, steps: intervalLog } = findInterval(f, 1000);
-    setIntervalSteps(intervalLog);
-
-    if (!interval) {
-      setError("Could not find an interval where the function changes sign within the search range.");
-      return;
-    }
-
-    const [a, b] = interval;
-
-    const { message, iterations } = falsePositionMethod(f, a, b, tolerance);
-
-    setResult(message);
-    setFalsePositionIterations(iterations);
-    setIterationsCount(iterations.length);
-  };
-
   const findInterval = (f, maxRange = 1000, step = 1) => {
     const steps = [];
     let fa, fb, a, b;
@@ -77,7 +42,7 @@ const FalsePositionMethod = () => {
         const fx = f(x);
         steps.push(`f(${x}) = ${fx.toFixed(6)}`);
         return fx;
-      } catch (err) {
+      } catch {
         steps.push(`Error evaluating function at x = ${x}`);
         return null;
       }
@@ -94,59 +59,39 @@ const FalsePositionMethod = () => {
       for (let x = a + step; x <= maxRange; x += step) {
         const fx = evaluateFunction(x);
         if (fx === null) continue;
-
         if (fx === 0) {
-          steps.push(`Exact root found at x = ${x}, Sign change detected between x = ${x - 1} and x = ${x + 1}`);
+          steps.push(`Exact root found at x = ${x}`);
           return { interval: [x - 1, x + 1], steps };
         }
-
         if (fa * fx < 0) {
           b = x;
           fb = fx;
           steps.push(`Sign change detected between x = ${a} and x = ${b}`);
           return { interval: [a, b], steps };
         }
-
         a = x;
         fa = fx;
       }
     }
 
-    steps.push(`No valid interval found in positive direction up to x = ${maxRange}. Searching in negative direction.`);
-
+    steps.push(`Searching in negative direction.`);
     a = 0;
     fa = evaluateFunction(a);
-    if (fa === null) {
-      steps.push(`Skipping negative direction due to evaluation error at x = ${a}`);
-      return { interval: null, steps };
-    } else if (fa === 0) {
-      steps.push(`Exact root found at x = ${a}`);
-      return { interval: [a, a], steps };
-    } else {
+    if (fa !== null) {
       for (let x = a - step; x >= -maxRange; x -= step) {
         const fx = evaluateFunction(x);
         if (fx === null) continue;
-
-        if (fx === 0) {
-          steps.push(`Exact root found at x = ${x}`);
-          return { interval: [x, x], steps };
-        }
-
         if (fa * fx < 0) {
           b = a;
           a = x;
-          fb = fa;
-          fa = fx;
           steps.push(`Sign change detected between x = ${a} and x = ${b}`);
           return { interval: [a, b], steps };
         }
-
         a = x;
         fa = fx;
       }
     }
 
-    steps.push(`No valid interval found in negative direction up to x = -${maxRange}.`);
     return { interval: null, steps };
   };
 
@@ -157,10 +102,8 @@ const FalsePositionMethod = () => {
 
     while (iter < maxIter) {
       iter++;
-
       const fa = f(a);
       const fb = f(b);
-
       c = (a * fb - b * fa) / (fb - fa);
       const fc = f(c);
 
@@ -186,11 +129,73 @@ const FalsePositionMethod = () => {
     };
   };
 
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    setError('');
+    setResult(null);
+    setIntervalSteps([]);
+    setFalsePositionIterations([]);
+    setIterationsCount(0);
+
+    let f;
+    try {
+      f = parseUserFunction(functionInput);
+      f(0);
+    } catch {
+      setError("Invalid function input. Please enter a valid mathematical expression.");
+      return;
+    }
+
+    const { interval, steps: intervalLog } = findInterval(f, 1000);
+    setIntervalSteps(intervalLog);
+
+    if (!interval) {
+      setError("Could not find an interval where the function changes sign.");
+      return;
+    }
+
+    const [a, b] = interval;
+    const { message, iterations } = falsePositionMethod(f, a, b, tolerance);
+
+    setResult(message);
+    setFalsePositionIterations(iterations);
+    setIterationsCount(iterations.length);
+  };
+
   const handleDemo = () => {
     setDemoInProgress(true);
-    setFunctionInput("x^2 - 4");
-    setTolerance(0.0001);
-    handleSubmit();
+    const demoFn = "x^2 - 4";
+    const demoTol = 0.0001;
+
+    setFunctionInput(demoFn);
+    setTolerance(demoTol);
+    setError('');
+
+    let f;
+    try {
+      f = parseUserFunction(demoFn);
+      f(0);
+    } catch {
+      setError("Invalid demo function input.");
+      setDemoInProgress(false);
+      return;
+    }
+
+    const { interval, steps: intervalLog } = findInterval(f, 1000);
+    setIntervalSteps(intervalLog);
+
+    if (!interval) {
+      setError("Could not auto-detect interval.");
+      setDemoInProgress(false);
+      return;
+    }
+
+    const [a, b] = interval;
+    const { message, iterations } = falsePositionMethod(f, a, b, demoTol);
+
+    setResult(message);
+    setFalsePositionIterations(iterations);
+    setIterationsCount(iterations.length);
     setDemoInProgress(false);
   };
 
@@ -427,32 +432,75 @@ const FalsePositionMethod = () => {
           )}
 
           {(viewTab === 'all' || viewTab === 'steps') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Secant Chord Interpolation
-              </h4>
+            <div id="false-position-steps-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Secant Chord Interpolation ({falsePositionIterations.length} Total Steps)
+                </h4>
+                <div className="flex items-center gap-2">
+                  {falsePositionIterations.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(!showAllSteps)}
+                      className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border border-black/30 dark:border-neutral-600 rounded-lg text-xs font-mono font-bold uppercase transition-all"
+                    >
+                      {showAllSteps ? 'Show First 5 Steps' : `Show All ${falsePositionIterations.length} Steps`}
+                    </button>
+                  )}
+                  <EditorialExportButton
+                    title="False Position Steps"
+                    targetId="false-position-steps-container"
+                    label="Export Steps"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
+              </div>
 
               <div className="space-y-3">
-                {falsePositionIterations.slice(0, 5).map((iter, index) => (
+                {(showAllSteps ? falsePositionIterations : falsePositionIterations.slice(0, 5)).map((iter, index) => (
                   <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
                     <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400">
                       <span>Iteration {iter.iteration}</span>
                       <span>Chord Root Approximation</span>
                     </div>
                     <div className="overflow-x-auto text-center py-1">
-                      <BlockMath math={`c^{(${iter.iteration})} = \\frac{a f(b) - b f(a)}{f(b) - f(a)} = ${iter.c.toFixed(6)}`} />
+                      <BlockMath math={`c^{(${iter.iteration})} = \\frac{a f(b) - b f(a)}{f(b) - f(a)} = \\frac{(${iter.a.toFixed(6)})(${iter.fb.toFixed(6)}) - (${iter.b.toFixed(6)})(${iter.fa.toFixed(6)})}{${iter.fb.toFixed(6)} - (${iter.fa.toFixed(6)})} = ${iter.c.toFixed(6)}`} />
+                    </div>
+                    <div className="text-xs font-mono text-neutral-600 dark:text-neutral-300 text-center">
+                      <InlineMath math={`f(c) = ${iter.fc.toFixed(6)}`} /> &rarr; {iter.fa * iter.fc < 0 ? 'Sign change in left subinterval [a, c]. New b = c.' : 'Sign change in right subinterval [c, b]. New a = c.'}
                     </div>
                   </div>
                 ))}
+                {!showAllSteps && falsePositionIterations.length > 5 && (
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(true)}
+                      className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Click to expand and view remaining {falsePositionIterations.length - 5} step derivations...
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {(viewTab === 'all' || viewTab === 'plot') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Interactive Function Plot
-              </h4>
+            <div id="false-position-plot-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Interactive Function Plot
+                </h4>
+                <EditorialExportButton
+                  title="False Position Graph Plot"
+                  targetId="false-position-plot-container"
+                  label="Export Graph"
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
 
               <div id="graphCanvas" className="w-full">
                 <UnifiedPlot

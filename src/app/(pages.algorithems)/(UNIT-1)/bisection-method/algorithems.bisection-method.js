@@ -18,6 +18,7 @@ const BisectionMethod = () => {
   const [error, setError] = useState('');
   const [iterationsCount, setIterationsCount] = useState(0);
   const [viewTab, setViewTab] = useState('all'); // 'all' | 'table' | 'steps' | 'plot'
+  const [showAllSteps, setShowAllSteps] = useState(false);
 
   // Handle input changes
   const handleFunctionChange = (e) => {
@@ -190,9 +191,63 @@ const BisectionMethod = () => {
 
   const handleDemo = () => {
     setDemoInProgress(true);
-    setFunctionInput("x * x * x - 4 * x - 9");
-    setTolerance(0.0001);
-    handleSubmit();
+    const demoFn = "x * x * x - 4 * x - 9";
+    const demoTol = 0.0001;
+
+    setFunctionInput(demoFn);
+    setTolerance(demoTol);
+    setError('');
+
+    let f;
+    try {
+      f = parseUserFunction(demoFn);
+      f(0);
+    } catch {
+      setError("Invalid demo function input.");
+      setDemoInProgress(false);
+      return;
+    }
+
+    const evaluateFunction = (xVal) => {
+      try {
+        return f(xVal);
+      } catch {
+        return null;
+      }
+    };
+
+    const steps = [];
+    let a = 0;
+    let fa = evaluateFunction(a);
+    let detectedInterval = null;
+
+    if (fa !== null) {
+      for (let x = 1; x <= 100; x += 1) {
+        const fx = evaluateFunction(x);
+        if (fx === null) continue;
+        if (fa * fx < 0) {
+          detectedInterval = [a, x];
+          steps.push(`Sign change detected between x = ${a} and x = ${x}`);
+          break;
+        }
+        a = x;
+        fa = fx;
+      }
+    }
+
+    setIntervalSteps(steps);
+
+    if (!detectedInterval) {
+      setError("Could not auto-detect a root-containing interval.");
+      setDemoInProgress(false);
+      return;
+    }
+
+    const [intA, intB] = detectedInterval;
+    const bisectionResult = bisectionMethod(f, intA, intB, demoTol);
+    setResult(bisectionResult.message);
+    setBisectionIterations(bisectionResult.iterations);
+    setIterationsCount(bisectionResult.iterations.length);
     setDemoInProgress(false);
   };
 
@@ -439,13 +494,33 @@ const BisectionMethod = () => {
 
           {/* Detailed Step Derivations View */}
           {(viewTab === 'all' || viewTab === 'steps') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Interval Halving
-              </h4>
+            <div id="bisection-steps-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiLayers className="w-5 h-5 text-neutral-500" /> Step-by-Step Interval Halving ({bisectionIterations.length} Total Steps)
+                </h4>
+                <div className="flex items-center gap-2">
+                  {bisectionIterations.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(!showAllSteps)}
+                      className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border border-black/30 dark:border-neutral-600 rounded-lg text-xs font-mono font-bold uppercase transition-all"
+                    >
+                      {showAllSteps ? 'Show First 5 Steps' : `Show All ${bisectionIterations.length} Steps`}
+                    </button>
+                  )}
+                  <EditorialExportButton
+                    title="Bisection Step Derivations"
+                    targetId="bisection-steps-container"
+                    label="Export Steps"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
+              </div>
 
               <div className="space-y-3">
-                {bisectionIterations.slice(0, 5).map((iter, index) => (
+                {(showAllSteps ? bisectionIterations : bisectionIterations.slice(0, 5)).map((iter, index) => (
                   <div key={index} className="p-4 border-2 border-black/40 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-2">
                     <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400">
                       <span>Iteration {iter.iteration}</span>
@@ -459,10 +534,16 @@ const BisectionMethod = () => {
                     </div>
                   </div>
                 ))}
-                {bisectionIterations.length > 5 && (
-                  <p className="text-xs font-mono text-center text-neutral-500 italic">
-                    ... {bisectionIterations.length - 5} remaining iterations summarized in table above.
-                  </p>
+                {!showAllSteps && bisectionIterations.length > 5 && (
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSteps(true)}
+                      className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Click to expand and view remaining {bisectionIterations.length - 5} step derivations...
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -470,10 +551,19 @@ const BisectionMethod = () => {
 
           {/* Plot View */}
           {(viewTab === 'all' || viewTab === 'plot') && (
-            <div className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
-              <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
-                <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Interactive Function Plot
-              </h4>
+            <div id="bisection-plot-container" className="border-2 border-black/80 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.85)] dark:shadow-none space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                  <FiTrendingUp className="w-5 h-5 text-neutral-500" /> Interactive Function Plot
+                </h4>
+                <EditorialExportButton
+                  title="Bisection Graph Plot"
+                  targetId="bisection-plot-container"
+                  label="Export Graph"
+                  variant="outline"
+                  size="sm"
+                />
+              </div>
 
               <div id="graphCanvas" className="w-full">
                 <UnifiedPlot
