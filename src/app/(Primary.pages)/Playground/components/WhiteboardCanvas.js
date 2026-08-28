@@ -21,6 +21,7 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     onStrokesErased,
     onStrokesUpdated,
     onDrawingStateChange,
+    onSelectionCompleted,
   },
   ref
 ) {
@@ -62,6 +63,7 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
   // Expose imperatively callable helper to erase specific stroke IDs & load/clear page strokes
   useImperativeHandle(ref, () => ({
+    getStrokes: () => strokesRef.current || [],
     eraseStrokesByIds: (strokeIdsToErase) => {
       if (!strokeIdsToErase || strokeIdsToErase.length === 0) return;
       strokesRef.current = strokesRef.current.filter((s) => !strokeIdsToErase.includes(s.id));
@@ -71,11 +73,10 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       if (onStrokesUpdated) onStrokesUpdated([...strokesRef.current]);
     },
     loadStrokes: (newStrokes = []) => {
-      strokesRef.current = [...newStrokes];
+      strokesRef.current = Array.isArray(newStrokes) ? [...newStrokes] : [];
       rtreeRef.current.clear();
       strokesRef.current.forEach((s) => rtreeRef.current.insert(s));
       redrawStaticLayer();
-      if (onStrokesUpdated) onStrokesUpdated([...strokesRef.current]);
     },
     clearStrokes: () => {
       strokesRef.current = [];
@@ -176,6 +177,31 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         if (onStrokesErased) onStrokesErased(hitIds);
         if (onStrokesUpdated) onStrokesUpdated([...strokesRef.current]);
       }
+    } else if (activeTool === 'lasso') {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+        ctx.setTransform(zoomLevel, 0, 0, zoomLevel, panOffset.x, panOffset.y);
+
+        const pts = activePointsRef.current;
+        if (pts.length > 1) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.setLineDash([6, 4]);
+          ctx.strokeStyle = '#8B5CF6';
+          ctx.fillStyle = 'rgba(139, 92, 246, 0.08)';
+          ctx.lineWidth = 2;
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) {
+            ctx.lineTo(pts[i].x, pts[i].y);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
     } else {
       const ctx = canvas.getContext('2d');
       if (ctx) {
@@ -206,7 +232,28 @@ const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
     if (onDrawingStateChange) onDrawingStateChange(false);
 
-    if (activeTool !== 'eraser' && activePointsRef.current.length > 0) {
+    if (activeTool === 'lasso' && activePointsRef.current.length > 2) {
+      const pts = activePointsRef.current;
+      const selectionBbox = calculateBoundingBox(pts);
+
+      // Find all strokes intersecting or enclosed in selection area
+      const selectedStrokes = strokesRef.current.filter((s) => {
+        const isEnclosed =
+          s.bbox.minX >= selectionBbox.minX - 30 &&
+          s.bbox.maxX <= selectionBbox.maxX + 30 &&
+          s.bbox.minY >= selectionBbox.minY - 30 &&
+          s.bbox.maxY <= selectionBbox.maxY + 30;
+        return isEnclosed || intersectsBBox(selectionBbox, s.bbox);
+      });
+
+      if (onSelectionCompleted && selectedStrokes.length > 0) {
+        onSelectionCompleted({
+          strokes: selectedStrokes,
+          strokeIds: selectedStrokes.map((s) => s.id),
+          bbox: selectionBbox,
+        });
+      }
+    } else if (activeTool !== 'eraser' && activeTool !== 'lasso' && activePointsRef.current.length > 0) {
       let finalPoints = [...activePointsRef.current];
       let strokeBbox = calculateBoundingBox(finalPoints);
 

@@ -24,10 +24,17 @@ import {
  * - Basic formatting toolbar (bold, italic shortcuts)
  * - Markdown-like styling
  */
-export default function TheoryBlock({ block, onUpdateContent }) {
+export default function TheoryBlock({
+  block,
+  onUpdateContent,
+  isEditing: propIsEditing,
+  setIsEditing: propSetIsEditing,
+}) {
   const [text, setText] = useState(block.content?.text || '');
-  // Auto-focus edit mode if minimal converted note block or text is empty
-  const [isEditing, setIsEditing] = useState(() => Boolean(block.isMinimal) || !block.content?.text);
+  const [localIsEditing, setLocalIsEditing] = useState(() => !block.content?.text);
+
+  const isEditing = propIsEditing !== undefined ? propIsEditing : localIsEditing;
+  const setIsEditing = propSetIsEditing || setLocalIsEditing;
   const [suggestion, setSuggestion] = useState(null);
   const textareaRef = useRef(null);
 
@@ -93,17 +100,90 @@ export default function TheoryBlock({ block, onUpdateContent }) {
       charCount += lines[i].length + 1; // +1 for \n
     }
 
-    // Toggle: if the line already starts with the prefix, remove it
+    let delta = 0;
     if (lines[lineIndex].startsWith(prefix)) {
       lines[lineIndex] = lines[lineIndex].substring(prefix.length);
+      delta = -prefix.length;
     } else {
-      // Remove other list prefixes if present
+      const oldLen = lines[lineIndex].length;
       lines[lineIndex] = lines[lineIndex].replace(/^(- |• |\[ \] |\[x\] )/, '');
+      const removedPrefixLen = oldLen - lines[lineIndex].length;
       lines[lineIndex] = prefix + lines[lineIndex];
+      delta = prefix.length - removedPrefixLen;
     }
 
     const newText = lines.join('\n');
     handleChange(newText);
+
+    requestAnimationFrame(() => {
+      if (el) {
+        el.focus();
+        const newPos = Math.max(0, start + delta);
+        el.setSelectionRange(newPos, newPos);
+      }
+    });
+  };
+
+  /**
+   * Applies bold formatting (**text**) to selected text or inserts cursor between asterisks.
+   */
+  const handleBold = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    let newText = '';
+    let newStart = start;
+    let newEnd = end;
+
+    if (start !== end) {
+      const selected = text.substring(start, end);
+      newText = text.substring(0, start) + `**${selected}**` + text.substring(end);
+      newStart = start;
+      newEnd = end + 4;
+    } else {
+      newText = text.substring(0, start) + '****' + text.substring(start);
+      newStart = newEnd = start + 2;
+    }
+
+    handleChange(newText);
+    requestAnimationFrame(() => {
+      if (el) {
+        el.focus();
+        el.setSelectionRange(newStart, newEnd);
+      }
+    });
+  };
+
+  /**
+   * Applies italic formatting (*text*) to selected text or inserts cursor between asterisks.
+   */
+  const handleItalic = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    let newText = '';
+    let newStart = start;
+    let newEnd = end;
+
+    if (start !== end) {
+      const selected = text.substring(start, end);
+      newText = text.substring(0, start) + `*${selected}*` + text.substring(end);
+      newStart = start;
+      newEnd = end + 2;
+    } else {
+      newText = text.substring(0, start) + '**' + text.substring(start);
+      newStart = newEnd = start + 1;
+    }
+
+    handleChange(newText);
+    requestAnimationFrame(() => {
+      if (el) {
+        el.focus();
+        el.setSelectionRange(newStart, newEnd);
+      }
+    });
   };
 
   /**
@@ -291,18 +371,29 @@ export default function TheoryBlock({ block, onUpdateContent }) {
 
     return textStr.split(/(\$[^$]+\$)/).map((part, i) => {
       if (part.startsWith('$') && part.endsWith('$')) {
-        return <InlineMath key={i} math={part.slice(1, -1)} />;
+        const mathExpr = part.slice(1, -1);
+        try {
+          return (
+            <InlineMath
+              key={i}
+              math={mathExpr}
+              renderError={() => <span className="font-mono text-sm text-zinc-800 dark:text-zinc-200">{mathExpr}</span>}
+            />
+          );
+        } catch (e) {
+          return <span key={i} className="font-mono text-sm text-zinc-800 dark:text-zinc-200">{mathExpr}</span>;
+        }
       }
-      // Bold (**text**)
-      if (part.includes('**')) {
-        return part.split(/(\*\*[^*]+\*\*)/).map((seg, j) => {
-          if (seg.startsWith('**') && seg.endsWith('**')) {
-            return <strong key={`${i}-${j}`} className="font-bold">{seg.slice(2, -2)}</strong>;
-          }
-          return <span key={`${i}-${j}`}>{seg}</span>;
-        });
-      }
-      return <span key={i}>{part}</span>;
+      // Bold (**text**) & Italic (*text*)
+      return part.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((seg, j) => {
+        if (seg.startsWith('**') && seg.endsWith('**')) {
+          return <strong key={`${i}-${j}`} className="font-bold text-zinc-900 dark:text-zinc-100">{seg.slice(2, -2)}</strong>;
+        }
+        if (seg.startsWith('*') && seg.endsWith('*')) {
+          return <em key={`${i}-${j}`} className="italic">{seg.slice(1, -1)}</em>;
+        }
+        return <span key={`${i}-${j}`}>{seg}</span>;
+      });
     });
   };
 
@@ -313,53 +404,37 @@ export default function TheoryBlock({ block, onUpdateContent }) {
           {/* Mini Formatting Toolbar */}
           <div className="flex items-center gap-1 pb-1 border-b border-zinc-200 dark:border-zinc-800">
             <button
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => insertLinePrefix('- ')}
               title="Bullet List"
-              className="p-1 text-zinc-400 hover:text-blue-500 rounded transition-colors"
+              className="p-1.5 text-zinc-500 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
             >
-              <FiList className="w-3.5 h-3.5" />
+              <FiList className="w-4 h-4" />
             </button>
             <button
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => insertLinePrefix('[ ] ')}
-              title="Checkbox"
-              className="p-1 text-zinc-400 hover:text-blue-500 rounded transition-colors"
+              title="Checkbox Task"
+              className="p-1.5 text-zinc-500 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
             >
-              <FiCheckSquare className="w-3.5 h-3.5" />
+              <FiCheckSquare className="w-4 h-4" />
             </button>
             <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-0.5" />
             <button
-              onClick={() => {
-                const el = textareaRef.current;
-                if (!el) return;
-                const start = el.selectionStart;
-                const end = el.selectionEnd;
-                if (start !== end) {
-                  const selected = text.substring(start, end);
-                  const newText = text.substring(0, start) + `**${selected}**` + text.substring(end);
-                  handleChange(newText);
-                }
-              }}
-              title="Bold (select text first)"
-              className="p-1 text-zinc-400 hover:text-blue-500 rounded transition-colors"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleBold}
+              title="Bold Text (**text**)"
+              className="p-1.5 text-zinc-500 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors font-bold"
             >
-              <FiBold className="w-3.5 h-3.5" />
+              <FiBold className="w-4 h-4" />
             </button>
             <button
-              onClick={() => {
-                const el = textareaRef.current;
-                if (!el) return;
-                const start = el.selectionStart;
-                const end = el.selectionEnd;
-                if (start !== end) {
-                  const selected = text.substring(start, end);
-                  const newText = text.substring(0, start) + `*${selected}*` + text.substring(end);
-                  handleChange(newText);
-                }
-              }}
-              title="Italic (select text first)"
-              className="p-1 text-zinc-400 hover:text-blue-500 rounded transition-colors"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleItalic}
+              title="Italic Text (*text*)"
+              className="p-1.5 text-zinc-500 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors italic"
             >
-              <FiItalic className="w-3.5 h-3.5" />
+              <FiItalic className="w-4 h-4" />
             </button>
           </div>
 
@@ -389,10 +464,6 @@ export default function TheoryBlock({ block, onUpdateContent }) {
                 handleChange(e.target.value, e.target.selectionStart);
               }}
               onFocus={() => {
-                // A new editing session is starting on this block. Reset the
-                // engine's (prevWord -> nextWord) chain so it doesn't stitch
-                // the last word of whatever was edited previously (this
-                // block or another one) onto the first word typed now.
                 resetSequenceContext();
               }}
               onClick={(e) => {
@@ -405,17 +476,7 @@ export default function TheoryBlock({ block, onUpdateContent }) {
               onBlur={() => {
                 setSuggestion(null);
                 if (text.trim()) {
-                  // Replay the block's own words in document order to seed
-                  // the recent-words cache and personalized next-word model.
-                  // Start from a clean sequence boundary (see onFocus) so
-                  // this replay can't be chained onto a previous session.
                   resetSequenceContext();
-                  // 2+ chars, not 3+: this needs to include short but very
-                  // common words ("to", "is", "in", "on", "of", "it", "we",
-                  // "he", ...) because those are exactly the words the
-                  // next-word prediction model keys its lookups on. Filtering
-                  // them out here meant personalization could never kick in
-                  // for the most frequent transition words in English.
                   const words = text.match(/[a-zA-Z]{2,}/g) || [];
                   for (let i = 0; i < words.length; i++) {
                     recordRecentWord(words[i]);
@@ -429,29 +490,22 @@ export default function TheoryBlock({ block, onUpdateContent }) {
               style={{ minHeight: '60px' }}
             />
           </div>
-          <div className="flex items-center justify-between text-[10px] text-zinc-400">
+          <div className="text-[10px] text-zinc-400 pt-0.5">
             <span>
               Markdown: <code className="text-zinc-500">- list</code> · <code className="text-zinc-500">[ ] task</code> · <code className="text-zinc-500">$math$</code> · <code className="text-zinc-500">**bold**</code>
             </span>
-            <button
-              onClick={() => setIsEditing(false)}
-              className="flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold rounded bg-blue-500 text-white"
-            >
-              <FiCheck className="w-3 h-3" />
-              <span>Done</span>
-            </button>
           </div>
         </div>
       ) : (
         <div
           onClick={() => setIsEditing(true)}
-          className="group relative px-3 py-2 rounded-lg bg-zinc-50/80 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60 text-sm font-sans font-semibold text-zinc-900 dark:text-zinc-100 cursor-text hover:border-blue-500/60 transition-all"
+          className="group relative px-2.5 py-1.5 rounded-lg bg-transparent hover:bg-zinc-100/40 dark:hover:bg-zinc-800/30 border border-transparent hover:border-zinc-200/80 dark:hover:border-zinc-800/80 text-sm font-sans font-semibold text-zinc-900 dark:text-zinc-100 cursor-text transition-all"
         >
           <div className="space-y-0">
             {renderRichContent(text)}
           </div>
 
-          <FiEdit2 className="absolute top-2 right-2 w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-blue-500 transition-opacity" />
+          <FiEdit2 className="absolute top-1.5 right-1.5 w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-blue-500 transition-opacity" />
         </div>
       )}
     </div>

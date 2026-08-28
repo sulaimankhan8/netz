@@ -63,9 +63,10 @@ export default function LiveMathPreviewOverlay({
       {clusters.map((cluster) => {
         const ocrStatus = cluster.ocrStatus || 'pending';
 
-        // Show pill ONLY if live OCR is toggled ON or if this specific stroke cluster is selected
+        // Show pill if live OCR is toggled ON, if cluster is selected, or if it is a manual Lasso selection cluster
+        const isSelectionCluster = cluster.clusterId && cluster.clusterId.startsWith('selection_');
         const isSelected = selectedClusterId === cluster.clusterId;
-        if (!showLiveOcr && !isSelected) return null;
+        if (!showLiveOcr && !isSelected && !isSelectionCluster) return null;
 
         const { bbox, detectedText, isMath, evaluatedResult } = cluster;
         const isEditing = editingClusterId === cluster.clusterId;

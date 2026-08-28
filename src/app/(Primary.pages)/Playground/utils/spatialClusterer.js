@@ -84,25 +84,47 @@ function getStrokeTimestamp(stroke) {
 
 /**
  * Evaluates whether a single stroke is a Scratch-Out Erase gesture.
- * A scratch-out is a rapid zigzag motion with 5+ direction changes.
+ * Requires high stroke point density, 10+ rapid direction changes within a compact area,
+ * and high bounding box intersection ratio over target strokes to prevent accidental deletion of handwriting.
  */
 export function detectScratchOutGesture(stroke, targetStrokes = []) {
-  if (!stroke || stroke.points.length < 10) return { isScratch: false, targetIds: [] };
+  if (!stroke || !stroke.points || stroke.points.length < 16) {
+    return { isScratch: false, targetIds: [] };
+  }
 
   const points = stroke.points;
   let directionChanges = 0;
   let prevDx = points[1].x - points[0].x;
+  let totalPathLength = 0;
 
-  for (let i = 2; i < points.length; i++) {
+  for (let i = 1; i < points.length; i++) {
     const dx = points[i].x - points[i - 1].x;
-    if ((dx > 0 && prevDx < 0) || (dx < 0 && prevDx > 0)) {
-      directionChanges++;
+    const dy = points[i].y - points[i - 1].y;
+    totalPathLength += Math.sqrt(dx * dx + dy * dy);
+
+    if (i >= 2) {
+      if ((dx > 1 && prevDx < -1) || (dx < -1 && prevDx > 1)) {
+        directionChanges++;
+      }
+      if (Math.abs(dx) > 1) prevDx = dx;
     }
-    if (Math.abs(dx) > 1) prevDx = dx;
   }
 
-  const isZigzag = directionChanges >= 5;
-  if (!isZigzag) return { isScratch: false, targetIds: [] };
+  // Scratch-out requires at least 10 rapid direction changes
+  if (directionChanges < 10) {
+    return { isScratch: false, targetIds: [] };
+  }
+
+  // Calculate bounding box diagonal
+  const bboxWidth = stroke.bbox.maxX - stroke.bbox.minX;
+  const bboxHeight = stroke.bbox.maxY - stroke.bbox.minY;
+  const diagonal = Math.sqrt(bboxWidth * bboxWidth + bboxHeight * bboxHeight);
+
+  // Density ratio: total path length relative to bounding box size
+  // Scribble gestures pack long path length into small bounding boxes (> 5.5 ratio)
+  if (diagonal === 0 || (totalPathLength / diagonal) < 5.5) {
+    return { isScratch: false, targetIds: [] };
+  }
 
   const targetIds = [];
   const scratchBox = stroke.bbox;
@@ -111,8 +133,25 @@ export function detectScratchOutGesture(stroke, targetStrokes = []) {
     const target = targetStrokes[i];
     if (target.id === stroke.id) continue;
 
+    // Check intersection box
     if (intersectsBBox(scratchBox, target.bbox)) {
-      targetIds.push(target.id);
+      const interMinX = Math.max(scratchBox.minX, target.bbox.minX);
+      const interMaxX = Math.min(scratchBox.maxX, target.bbox.maxX);
+      const interMinY = Math.max(scratchBox.minY, target.bbox.minY);
+      const interMaxY = Math.min(scratchBox.maxY, target.bbox.maxY);
+
+      const interWidth = Math.max(0, interMaxX - interMinX);
+      const interHeight = Math.max(0, interMaxY - interMinY);
+      const interArea = interWidth * interHeight;
+
+      const targetWidth = Math.max(1, target.bbox.maxX - target.bbox.minX);
+      const targetHeight = Math.max(1, target.bbox.maxY - target.bbox.minY);
+      const targetArea = targetWidth * targetHeight;
+
+      // Ensure the scratch box covers at least 40% of the target stroke area
+      if (interArea / targetArea >= 0.4) {
+        targetIds.push(target.id);
+      }
     }
   }
 

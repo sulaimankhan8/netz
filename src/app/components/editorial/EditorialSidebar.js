@@ -147,6 +147,21 @@ export default function EditorialSidebar({ className = '' }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Intercept links when on Playground with unsaved changes
+  const handleNavClick = (e, targetUrl) => {
+    setMobileOpen(false);
+    if (
+      typeof window !== 'undefined' &&
+      pathname === '/Playground' &&
+      targetUrl !== '/Playground' &&
+      window.__NETZ_PLAYGROUND_HAS_UNSAVED_CHANGES__ &&
+      window.__NETZ_OPEN_UNSAVED_MODAL__
+    ) {
+      e.preventDefault();
+      window.__NETZ_OPEN_UNSAVED_MODAL__(targetUrl);
+    }
+  };
+
   // Expanded Accordion States for Open Mode
   const [isPagesMenuOpen, setIsPagesMenuOpen] = useState(true);
   const [expandedUnits, setExpandedUnits] = useState({ 'unit-2': true });
@@ -351,7 +366,7 @@ export default function EditorialSidebar({ className = '' }) {
                   <Link
                     key={idx}
                     href={item.link}
-                    onClick={() => setMobileOpen(false)}
+                    onClick={(e) => handleNavClick(e, item.link)}
                     className="flex flex-col p-2 rounded-lg text-xs font-mono hover:bg-neutral-200/60 dark:hover:bg-neutral-800 transition-colors border border-transparent hover:border-neutral-300 dark:hover:border-neutral-700"
                   >
                     <span className="font-semibold text-neutral-800 dark:text-neutral-200 truncate">
@@ -463,7 +478,7 @@ export default function EditorialSidebar({ className = '' }) {
                                                   <Link
                                                     key={lIdx}
                                                     href={leaf.link}
-                                                    onClick={() => setMobileOpen(false)}
+                                                    onClick={(e) => handleNavClick(e, leaf.link)}
                                                     className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-mono transition-all ${
                                                       active
                                                         ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-sm'
@@ -486,7 +501,7 @@ export default function EditorialSidebar({ className = '' }) {
                                       <Link
                                         key={sIdx}
                                         href={sub.link}
-                                        onClick={() => setMobileOpen(false)}
+                                        onClick={(e) => handleNavClick(e, sub.link)}
                                         className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-mono transition-all ${
                                           active
                                             ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-sm'
@@ -613,9 +628,10 @@ export default function EditorialSidebar({ className = '' }) {
                               <Link
                                 key={sIdx}
                                 href={sub.link}
-                                onClick={() => {
+                                onClick={(e) => {
                                   setIsRailPagesHovered(false);
                                   setRailActiveUnitIndex(null);
+                                  handleNavClick(e, sub.link);
                                 }}
                                 className={`block px-2.5 py-2 rounded-lg text-xs font-mono transition-all truncate ${
                                   active
@@ -652,10 +668,11 @@ export default function EditorialSidebar({ className = '' }) {
                               <Link
                                 key={lIdx}
                                 href={leaf.link}
-                                onClick={() => {
+                                onClick={(e) => {
                                   setIsRailPagesHovered(false);
                                   setRailActiveUnitIndex(null);
                                   setRailActiveSubTopicIndex(null);
+                                  handleNavClick(e, leaf.link);
                                 }}
                                 className={`flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono transition-all ${
                                   active
@@ -697,7 +714,7 @@ export default function EditorialSidebar({ className = '' }) {
                     >
                       <Link
                         href={nav.route}
-                        onClick={() => setMobileOpen(false)}
+                        onClick={(e) => handleNavClick(e, nav.route)}
                         className={`flex items-center transition-all ${
                           active
                             ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-sm'

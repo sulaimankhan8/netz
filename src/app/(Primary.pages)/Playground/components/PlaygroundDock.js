@@ -64,6 +64,8 @@ export default function PlaygroundDock({
   onExportCanvas,
   showLiveOcr = false,
   setShowLiveOcr,
+  ocrMode = 'selection',
+  setOcrMode,
   notesMode = false,
   setNotesMode,
   isRecording = false,
@@ -152,8 +154,37 @@ export default function PlaygroundDock({
             ))}
           </div>
 
+          {/* OCR Mode Selector: Selection-Based (Default) vs Live Continuous */}
+          {setOcrMode && (
+            <div className="flex items-center gap-1 pl-3 border-l border-zinc-200 dark:border-zinc-800 text-xs">
+              <span className="text-zinc-400 dark:text-zinc-500 mr-1">OCR Mode:</span>
+              <button
+                onClick={() => setOcrMode('selection')}
+                title="Convert ink only when selecting drawn areas with Lasso tool"
+                className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
+                  ocrMode === 'selection'
+                    ? 'bg-purple-500 text-white font-semibold'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200'
+                }`}
+              >
+                Selection
+              </button>
+              <button
+                onClick={() => setOcrMode('live')}
+                title="Auto-convert every word continuously while writing"
+                className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
+                  ocrMode === 'live'
+                    ? 'bg-blue-500 text-white font-semibold'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200'
+                }`}
+              >
+                Live Auto
+              </button>
+            </div>
+          )}
+
           {/* Live OCR Opt-In Toggle */}
-          {setShowLiveOcr && (
+          {setShowLiveOcr && ocrMode === 'live' && (
             <div className="flex items-center gap-1 pl-3 border-l border-zinc-200 dark:border-zinc-800 text-xs">
               <button
                 onClick={() => setShowLiveOcr(!showLiveOcr)}

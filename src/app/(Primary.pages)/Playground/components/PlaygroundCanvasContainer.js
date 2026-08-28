@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
+import { useRouter } from 'next/navigation';
 import CanvasGridBackground from './CanvasGridBackground';
 import WhiteboardCanvas from './WhiteboardCanvas';
 import PlaygroundDock from './PlaygroundDock';
@@ -14,7 +15,9 @@ import TheoryBlock from './blocks/TheoryBlock';
 import SketchBlock from './blocks/SketchBlock';
 import AudioMemoBlock from './blocks/AudioMemoBlock';
 import ImageBlock from './blocks/ImageBlock';
+import BackgroundMusicPlayer from './BackgroundMusicPlayer';
 import PageManager from './PageManager';
+import UnsavedChangesModal from './UnsavedChangesModal';
 import { startAudioRecording, stopAudioRecording } from '../utils/audioRecorder';
 
 import { clusterStrokes } from '../utils/spatialClusterer';
@@ -27,6 +30,7 @@ import {
   differentiateExpression,
   integrateExpression,
   solveRootsExpression,
+  formatRawMathToTeX,
 } from '../utils/mathASTEvaluator';
 import {
   smartBlockReducer,
@@ -36,6 +40,8 @@ import {
 } from '../utils/smartBlockStore';
 
 export default function PlaygroundCanvasContainer() {
+  const router = useRouter();
+
   // Viewport Dimensions
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
 
@@ -49,10 +55,11 @@ export default function PlaygroundCanvasContainer() {
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [gridStyle, setGridStyle] = useState('dots');
 
-  // Drawing & Live OCR Opt-In State (Default false = quiet, clean canvas!)
+  // Drawing & Live OCR Opt-In State (Default 'selection' = clean canvas, manual selection OCR!)
   const [isDrawing, setIsDrawing] = useState(false);
   const [showLiveOcr, setShowLiveOcr] = useState(false);
   const [selectedClusterId, setSelectedClusterId] = useState(null);
+  const [ocrMode, setOcrMode] = useState('selection'); // 'selection' (manual on selection) | 'live' (auto on draw)
 
   // Notes Mode State — when true, enables lined paper, auto-OCR, and note-taking UI
   const [notesMode, setNotesMode] = useState(false);
@@ -70,39 +77,185 @@ export default function PlaygroundCanvasContainer() {
   // OCR Clusters State
   const [clusters, setClusters] = useState([]);
 
-  // Modal State
+  // Modal States
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
+  const [pendingTargetUrl, setPendingTargetUrl] = useState(null);
 
-  // Pan State & Debounce Refs
+  // Pan State, Canvas & Persistence Refs
   const containerRef = useRef(null);
   const isMiddlePanRef = useRef(false);
   const startPanRef = useRef({ x: 0, y: 0 });
   const ocrDebounceTimerRef = useRef(null);
   const whiteboardCanvasRef = useRef(null);
 
-  // Load Session from IndexedDB on Mount
+  // Refs to eliminate race conditions and stale closures
+  const isSessionLoadedRef = useRef(false);
+  const pagesRef = useRef(pages);
+  const currentPageIndexRef = useRef(currentPageIndex);
+  const blockStateRef = useRef(blockState);
+  const latestStrokesRef = useRef([]);
+
   useEffect(() => {
+    pagesRef.current = pages;
+  }, [pages]);
+
+  useEffect(() => {
+    currentPageIndexRef.current = currentPageIndex;
+  }, [currentPageIndex]);
+
+  useEffect(() => {
+    blockStateRef.current = blockState;
+  }, [blockState]);
+
+  // Centralized Bulletproof Session Persistence Helper
+  const persistSession = useCallback((overridePages, overrideIndex, overrideBlocks, overrideLinks) => {
+    if (!isSessionLoadedRef.current) return; // Prevent overwriting session before initial load finishes!
+
+    let currentStrokes = null;
+    if (whiteboardCanvasRef.current?.getStrokes) {
+      currentStrokes = whiteboardCanvasRef.current.getStrokes();
+    } else {
+      currentStrokes = latestStrokesRef.current;
+    }
+
+    const targetPages = overridePages || pagesRef.current;
+    const targetIndex = overrideIndex !== undefined ? overrideIndex : currentPageIndexRef.current;
+    const targetBlocks = overrideBlocks || blockStateRef.current.blocks;
+    const targetLinks = overrideLinks || blockStateRef.current.links;
+
+    const finalPages = targetPages.map((p, idx) => {
+      if (idx === targetIndex) {
+        const strokesToSave = (currentStrokes !== null && Array.isArray(currentStrokes))
+          ? currentStrokes
+          : (p.strokes || []);
+        return {
+          ...p,
+          strokes: strokesToSave,
+          blocks: targetBlocks,
+          links: targetLinks,
+        };
+      }
+      return p;
+    });
+
+    pagesRef.current = finalPages;
+
+    const sessionObj = {
+      pages: finalPages,
+      currentPageIndex: targetIndex,
+      blocks: targetBlocks,
+      links: targetLinks,
+    };
+
+    saveSessionToIndexedDB('default_session', sessionObj);
+    try {
+      localStorage.setItem('NETZ_PLAYGROUND_SESSION_BACKUP', JSON.stringify(sessionObj));
+    } catch (e) {}
+  }, []);
+
+  // Save Feedback Toast State
+  const [isSavedToastVisible, setIsSavedToastVisible] = useState(false);
+
+  // Load Session on Mount (Restores Multi-Page Notebook, Page Index & Ink Strokes)
+  useEffect(() => {
+    const restoreSession = (saved) => {
+      if (!saved || !saved.pages || saved.pages.length === 0) return;
+
+      setPages(saved.pages);
+      pagesRef.current = saved.pages;
+
+      const restoredIdx = Math.min(Math.max(0, saved.currentPageIndex || 0), saved.pages.length - 1);
+      setCurrentPageIndex(restoredIdx);
+      currentPageIndexRef.current = restoredIdx;
+
+      const activePage = saved.pages[restoredIdx];
+      const activeStrokes = activePage.strokes || [];
+      latestStrokesRef.current = activeStrokes;
+
+      dispatch({
+        type: 'SET_SESSION',
+        payload: {
+          blocks: activePage.blocks || saved.blocks || [],
+          links: activePage.links || saved.links || [],
+        },
+      });
+
+      isSessionLoadedRef.current = true;
+
+      // Retry loadStrokes to ensure static canvas is ready in DOM
+      const tryLoad = (attempts = 0) => {
+        if (whiteboardCanvasRef.current && whiteboardCanvasRef.current.loadStrokes) {
+          whiteboardCanvasRef.current.loadStrokes(activeStrokes);
+        } else if (attempts < 20) {
+          setTimeout(() => tryLoad(attempts + 1), 50);
+        }
+      };
+      tryLoad();
+    };
+
+    let restored = false;
+    try {
+      const backup = localStorage.getItem('NETZ_PLAYGROUND_SESSION_BACKUP');
+      if (backup) {
+        const parsed = JSON.parse(backup);
+        if (parsed && parsed.pages && parsed.pages.length > 0) {
+          restoreSession(parsed);
+          restored = true;
+        }
+      }
+    } catch (e) {}
+
     loadSessionFromIndexedDB('default_session', (saved) => {
-      if (saved) {
-        dispatch({ type: 'SET_SESSION', payload: saved });
+      if (!restored && saved && saved.pages && saved.pages.length > 0) {
+        restoreSession(saved);
+      } else if (!restored) {
+        isSessionLoadedRef.current = true;
       }
     });
 
-    // Pre-warm the Tesseract WASM OCR engine in background
-    // Downloads ~3MB model on first visit (browser-cached after that)
     preloadOCREngine();
-
-    // Pre-warm English word Trie with 7-day IndexedDB cache in background
     initAutocompleteTrie();
   }, []);
 
-  // Save Session to IndexedDB when blocks or links change
+  // Save Session whenever blocks or links change (guarded by isSessionLoadedRef)
   useEffect(() => {
-    saveSessionToIndexedDB('default_session', {
-      blocks: blockState.blocks,
-      links: blockState.links,
-    });
-  }, [blockState.blocks, blockState.links]);
+    if (isSessionLoadedRef.current) {
+      persistSession();
+    }
+  }, [blockState.blocks, blockState.links, persistSession]);
+
+  // Synchronous Unmount Cleanup: Flushes latest strokes & session state before unmounting
+  useEffect(() => {
+    return () => {
+      if (isSessionLoadedRef.current) {
+        persistSession();
+      }
+    };
+  }, [persistSession]);
+
+  // Track if session has active content
+  const hasUnsavedContent = latestStrokesRef.current.length > 0 || blockState.blocks.length > 0;
+
+  // Expose global window handler for in-app navigation intercept (Sidebar links)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.__NETZ_PLAYGROUND_HAS_UNSAVED_CHANGES__ = hasUnsavedContent;
+      window.__NETZ_OPEN_UNSAVED_MODAL__ = (targetUrl) => {
+        setPendingTargetUrl(targetUrl);
+        setIsUnsavedModalOpen(true);
+      };
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.__NETZ_PLAYGROUND_HAS_UNSAVED_CHANGES__ = false;
+        window.__NETZ_OPEN_UNSAVED_MODAL__ = null;
+      }
+    };
+  }, [hasUnsavedContent]);
+
+  // Auto-Save prevents data loss; native beforeunload disabled to eliminate ugly browser reload prompt
+  // (Reloads F5 cleanly like Google Docs/Figma while restoring drawings instantly; in-app nav uses WPS popup)
 
   // Window Resize Listener
   useEffect(() => {
@@ -142,10 +295,42 @@ export default function PlaygroundCanvasContainer() {
     return () => window.removeEventListener('paste', handlePaste);
   }, [panOffset, dimensions, zoomLevel]);
 
-  // Stroke Updates Listener
+  // Stroke Updates Listener (Auto-saves ink strokes & updates active page state)
   const handleStrokesUpdated = useCallback((allStrokes) => {
+    latestStrokesRef.current = allStrokes;
+    // Synchronously update active page strokes & persist session
+    setPages((prevPages) => {
+      const updatedPages = prevPages.map((p, idx) => {
+        if (idx === currentPageIndex) {
+          return { ...p, strokes: allStrokes };
+        }
+        return p;
+      });
+
+      pagesRef.current = updatedPages;
+
+      const sessionObj = {
+        pages: updatedPages,
+        currentPageIndex,
+        blocks: blockState.blocks,
+        links: blockState.links,
+      };
+
+      saveSessionToIndexedDB('default_session', sessionObj);
+      try {
+        localStorage.setItem('NETZ_PLAYGROUND_SESSION_BACKUP', JSON.stringify(sessionObj));
+      } catch (e) {}
+
+      return updatedPages;
+    });
+
     if (ocrDebounceTimerRef.current) {
       clearTimeout(ocrDebounceTimerRef.current);
+    }
+
+    // In 'selection' mode, do not auto-recompute OCR on every stroke write
+    if (ocrMode === 'selection') {
+      return;
     }
 
     const rawClusters = clusterStrokes(allStrokes, 90);
@@ -179,7 +364,6 @@ export default function PlaygroundCanvasContainer() {
         })
       );
 
-      // Show ALL clusters — including those with empty text (they get 'error' or 'no_api_key' status)
       setClusters(processed);
 
       // Auto-select latest recognized cluster if Lasso tool is active
@@ -188,7 +372,48 @@ export default function PlaygroundCanvasContainer() {
         setSelectedClusterId(recognizedClusters[recognizedClusters.length - 1].clusterId);
       }
     }, delay);
-  }, [activeTool]);
+  }, [activeTool, ocrMode, currentPageIndex, blockState.blocks, blockState.links]);
+
+  // Handle Manual Selection OCR Trigger (when user selects drawn area with Lasso)
+  const handleSelectionCompleted = useCallback(async ({ strokes, strokeIds, bbox }) => {
+    if (!strokes || strokes.length === 0) return;
+
+    const selectionClusterId = `selection_${Date.now()}`;
+    const selectionCluster = {
+      clusterId: selectionClusterId,
+      strokeIds,
+      strokes,
+      bbox,
+      hasEqualsGesture: false,
+      status: 'pending',
+      detectedText: '',
+      isMath: false,
+      evaluatedResult: null,
+      confidence: 0,
+      ocrStatus: 'pending',
+    };
+
+    setClusters((prev) => [...prev.filter((c) => !c.clusterId.startsWith('selection_')), selectionCluster]);
+    setSelectedClusterId(selectionClusterId);
+
+    const res = await processClusterOCR(selectionCluster, { forceRefresh: true });
+
+    if (res) {
+      const updatedCluster = {
+        ...selectionCluster,
+        detectedText: res.detectedText || '',
+        isMath: res.isMath || false,
+        evaluatedResult: res.evaluatedResult || null,
+        confidence: res.confidence || 0,
+        ocrStatus: res.detectedText ? 'recognized' : (res.status || 'error'),
+        ocrError: res.error || null,
+      };
+
+      setClusters((prev) =>
+        prev.map((c) => (c.clusterId === selectionClusterId ? updatedCluster : c))
+      );
+    }
+  }, []);
 
   // Spawn New Smart Block
   const handleAddBlock = (type) => {
@@ -200,10 +425,9 @@ export default function PlaygroundCanvasContainer() {
     if (type === 'equation') {
       defaultContent = { latex: 'y = x^2 - 4x + 3' };
     } else if (type === 'graph') {
-      const graphDataset = generateGraphDatasetFromLatex('y = x^2 - 4x + 3', 'f(x)', [-10, 10], 0);
+      const graphDataset = generateGraphDatasetFromLatex('y = x^2 - 4x + 3', 'f(x) = x² - 4x + 3', [-10, 10], 0);
       defaultContent = {
         graphData: {
-          labels: graphDataset ? graphDataset.data.map((p) => p.x) : [],
           datasets: graphDataset ? [graphDataset] : [],
         },
       };
@@ -237,7 +461,7 @@ export default function PlaygroundCanvasContainer() {
       type: 'image',
       content: {
         imageUrl: dataUrl,
-        caption: 'Inserted image',
+        caption: '',
       },
       linkedBlockIds: [],
       position: { x: spawnX, y: spawnY },
@@ -293,24 +517,41 @@ export default function PlaygroundCanvasContainer() {
     }
   };
 
+  // Native Playground Save (Persists session right here in Playground without popups)
+  const handleManualSave = () => {
+    persistSession();
+    setIsSavedToastVisible(true);
+    setTimeout(() => setIsSavedToastVisible(false), 2000);
+  };
+
+  // Helper to synchronize active page strokes and blocks before page transitions
+  const getSyncedPagesState = () => {
+    const currentStrokes = whiteboardCanvasRef.current?.getStrokes ? whiteboardCanvasRef.current.getStrokes() : [];
+    return pagesRef.current.map((p, idx) => {
+      if (idx === currentPageIndexRef.current) {
+        return {
+          ...p,
+          strokes: currentStrokes,
+          blocks: blockStateRef.current.blocks,
+          links: blockStateRef.current.links,
+        };
+      }
+      return p;
+    });
+  };
+
   // Multi-Page Actions
   const handleSelectPage = (newIdx) => {
-    if (newIdx === currentPageIndex) return;
-    // Save current page state
-    setPages((prev) => {
-      const updated = [...prev];
-      updated[currentPageIndex] = {
-        ...updated[currentPageIndex],
-        blocks: blockState.blocks,
-        links: blockState.links,
-      };
-      return updated;
-    });
+    if (newIdx === currentPageIndexRef.current || newIdx < 0 || newIdx >= pagesRef.current.length) return;
+    
+    const updatedPages = getSyncedPagesState();
+    setPages(updatedPages);
+    pagesRef.current = updatedPages;
 
-    const targetPage = pages[newIdx];
     setCurrentPageIndex(newIdx);
+    currentPageIndexRef.current = newIdx;
 
-    // Load target page blocks
+    const targetPage = updatedPages[newIdx];
     dispatch({
       type: 'SET_SESSION',
       payload: {
@@ -319,14 +560,16 @@ export default function PlaygroundCanvasContainer() {
       },
     });
 
-    // Load target page strokes
     if (whiteboardCanvasRef.current) {
       whiteboardCanvasRef.current.loadStrokes(targetPage.strokes || []);
     }
+
+    persistSession(updatedPages, newIdx, targetPage.blocks || [], targetPage.links || []);
   };
 
   const handleAddPage = () => {
-    const newPageNum = pages.length + 1;
+    const synced = getSyncedPagesState();
+    const newPageNum = synced.length + 1;
     const newPage = {
       id: `page_${Date.now()}`,
       title: `Page ${newPageNum}`,
@@ -335,28 +578,104 @@ export default function PlaygroundCanvasContainer() {
       links: [],
     };
 
-    setPages((prev) => [...prev, newPage]);
-    handleSelectPage(pages.length);
+    const nextPages = [...synced, newPage];
+    const newIdx = nextPages.length - 1;
+
+    setPages(nextPages);
+    pagesRef.current = nextPages;
+
+    setCurrentPageIndex(newIdx);
+    currentPageIndexRef.current = newIdx;
+
+    dispatch({ type: 'SET_SESSION', payload: { blocks: [], links: [] } });
+    if (whiteboardCanvasRef.current) {
+      whiteboardCanvasRef.current.clearStrokes();
+    }
+
+    persistSession(nextPages, newIdx, [], []);
+  };
+
+  const handleClearPage = () => {
+    if (whiteboardCanvasRef.current) {
+      whiteboardCanvasRef.current.clearStrokes();
+    }
+    dispatch({ type: 'SET_SESSION', payload: { blocks: [], links: [] } });
+
+    const synced = getSyncedPagesState();
+    synced[currentPageIndexRef.current].strokes = [];
+    synced[currentPageIndexRef.current].blocks = [];
+    synced[currentPageIndexRef.current].links = [];
+
+    setPages(synced);
+    pagesRef.current = synced;
+
+    persistSession(synced, currentPageIndexRef.current, [], []);
   };
 
   const handleDeletePage = (delIdx) => {
-    if (pages.length <= 1) return;
-    const remaining = pages.filter((_, idx) => idx !== delIdx);
+    if (pagesRef.current.length <= 1) return;
+    const synced = getSyncedPagesState();
+    const remaining = synced.filter((_, idx) => idx !== delIdx);
+    const newIdx = Math.min(currentPageIndexRef.current, remaining.length - 1);
+
     setPages(remaining);
-    const newIdx = Math.min(currentPageIndex, remaining.length - 1);
-    handleSelectPage(newIdx);
+    pagesRef.current = remaining;
+
+    setCurrentPageIndex(newIdx);
+    currentPageIndexRef.current = newIdx;
+
+    const targetPage = remaining[newIdx];
+    dispatch({
+      type: 'SET_SESSION',
+      payload: {
+        blocks: targetPage.blocks || [],
+        links: targetPage.links || [],
+      },
+    });
+
+    if (whiteboardCanvasRef.current) {
+      whiteboardCanvasRef.current.loadStrokes(targetPage.strokes || []);
+    }
+
+    persistSession(remaining, newIdx, targetPage.blocks || [], targetPage.links || []);
   };
 
   const handleDuplicatePage = (dupIdx) => {
-    const srcPage = pages[dupIdx];
+    const synced = getSyncedPagesState();
+    const srcPage = synced[dupIdx];
+    const currentStrokes = whiteboardCanvasRef.current?.getStrokes ? whiteboardCanvasRef.current.getStrokes() : [];
+    const srcStrokes = dupIdx === currentPageIndexRef.current ? currentStrokes : (srcPage.strokes || []);
+
     const dupPage = {
       id: `page_${Date.now()}`,
       title: `${srcPage.title} (Copy)`,
-      strokes: [...(srcPage.strokes || [])],
-      blocks: JSON.parse(JSON.stringify(blockState.blocks || [])),
-      links: JSON.parse(JSON.stringify(blockState.links || [])),
+      strokes: JSON.parse(JSON.stringify(srcStrokes)),
+      blocks: JSON.parse(JSON.stringify(srcPage.blocks || blockStateRef.current.blocks)),
+      links: JSON.parse(JSON.stringify(srcPage.links || blockStateRef.current.links)),
     };
-    setPages((prev) => [...prev, dupPage]);
+
+    const nextPages = [...synced.slice(0, dupIdx + 1), dupPage, ...synced.slice(dupIdx + 1)];
+    const newIdx = dupIdx + 1;
+
+    setPages(nextPages);
+    pagesRef.current = nextPages;
+
+    setCurrentPageIndex(newIdx);
+    currentPageIndexRef.current = newIdx;
+
+    dispatch({
+      type: 'SET_SESSION',
+      payload: {
+        blocks: dupPage.blocks,
+        links: dupPage.links,
+      },
+    });
+
+    if (whiteboardCanvasRef.current) {
+      whiteboardCanvasRef.current.loadStrokes(dupPage.strokes);
+    }
+
+    persistSession(nextPages, newIdx, dupPage.blocks, dupPage.links);
   };
 
   // Convert OCR Handwriting Cluster to In-Place Editable Typed Block (Replacing Ink)
@@ -399,7 +718,7 @@ export default function PlaygroundCanvasContainer() {
 
   // Plot Graph from Equation Block
   const handlePlotGraph = (equationBlock, latexStr) => {
-    const dataset = generateGraphDatasetFromLatex(latexStr, 'f(x)', [-10, 10], 0);
+    const dataset = generateGraphDatasetFromLatex(latexStr, latexStr || 'f(x)', [-10, 10], 0);
     const graphBlockId = `block_graph_${Date.now()}`;
 
     const graphBlock = {
@@ -407,7 +726,6 @@ export default function PlaygroundCanvasContainer() {
       type: 'graph',
       content: {
         graphData: {
-          labels: dataset ? dataset.data.map((p) => p.x) : [],
           datasets: dataset ? [dataset] : [],
         },
       },
@@ -416,7 +734,7 @@ export default function PlaygroundCanvasContainer() {
         x: equationBlock.position.x + 420,
         y: equationBlock.position.y,
       },
-      size: { width: 420, height: 280 },
+      size: { width: 440, height: 320 },
       status: 'active',
       isMinimal: false,
     };
@@ -466,8 +784,11 @@ export default function PlaygroundCanvasContainer() {
       dispatch({ type: 'LINK_BLOCKS', payload: { sourceBlockId: block.blockId, targetBlockId: integBlockId } });
     } else if (actionKey === 'FIND_ROOTS') {
       const roots = solveRootsExpression(latexStr, 'x');
+      const rootsFormatted = roots.length > 0
+        ? roots.map((r) => formatRawMathToTeX(r)).join(', ')
+        : '';
       const rootsText = roots.length > 0
-        ? `Roots of $${latexStr}$: $x = ${roots.join(', ')}$`
+        ? `Roots of $${latexStr}$: $x = ${rootsFormatted}$`
         : `No real roots found for $${latexStr}$.`;
 
       const rootsBlockId = `block_roots_${Date.now()}`;
@@ -477,7 +798,7 @@ export default function PlaygroundCanvasContainer() {
         content: { text: rootsText },
         linkedBlockIds: [block.blockId],
         position: { x: block.position.x + 400, y: block.position.y },
-        size: { width: 380, height: 180 },
+        size: { width: 440, height: 160 },
         status: 'active',
         isMinimal: false,
       };
@@ -598,6 +919,7 @@ export default function PlaygroundCanvasContainer() {
         height={dimensions.height}
         onStrokesUpdated={handleStrokesUpdated}
         onDrawingStateChange={setIsDrawing}
+        onSelectionCompleted={handleSelectionCompleted}
       />
 
       {/* Layer 4: SVG Bézier Link Path Connectors */}
@@ -614,7 +936,9 @@ export default function PlaygroundCanvasContainer() {
           key={block.blockId}
           block={block}
           zoomLevel={zoomLevel}
+          panOffset={panOffset}
           onUpdatePosition={(blockId, pos) => dispatch({ type: 'UPDATE_BLOCK_POSITION', payload: { blockId, position: pos } })}
+          onUpdateSize={(blockId, size) => dispatch({ type: 'UPDATE_BLOCK_SIZE', payload: { blockId, size } })}
           onDeleteBlock={(blockId) => dispatch({ type: 'REMOVE_BLOCK', payload: blockId })}
           onSelectAiAction={handleSelectAiAction}
         >
@@ -626,7 +950,12 @@ export default function PlaygroundCanvasContainer() {
             />
           )}
 
-          {block.type === 'graph' && <GraphBlock block={block} />}
+          {block.type === 'graph' && (
+            <GraphBlock
+              block={block}
+              onUpdateContent={(blockId, content) => dispatch({ type: 'UPDATE_BLOCK_CONTENT', payload: { blockId, content } })}
+            />
+          )}
 
           {block.type === 'theory' && (
             <TheoryBlock
@@ -664,7 +993,10 @@ export default function PlaygroundCanvasContainer() {
           )}
 
           {block.type === 'image' && (
-            <ImageBlock block={block} />
+            <ImageBlock
+              block={block}
+              onUpdateContent={(blockId, content) => dispatch({ type: 'UPDATE_BLOCK_CONTENT', payload: { blockId, content } })}
+            />
           )}
         </SmartBlockWrapper>
       ))}
@@ -676,8 +1008,11 @@ export default function PlaygroundCanvasContainer() {
           currentPageIndex={currentPageIndex}
           onSelectPage={handleSelectPage}
           onAddPage={handleAddPage}
+          onClearPage={handleClearPage}
           onDeletePage={handleDeletePage}
           onDuplicatePage={handleDuplicatePage}
+          onManualSave={handleManualSave}
+          isJustSaved={isSavedToastVisible}
         />
       </div>
 
@@ -687,7 +1022,7 @@ export default function PlaygroundCanvasContainer() {
         zoomLevel={zoomLevel}
         panOffset={panOffset}
         isDrawing={isDrawing}
-        showLiveOcr={showLiveOcr}
+        showLiveOcr={showLiveOcr || ocrMode === 'selection'}
         selectedClusterId={selectedClusterId}
         onConvertCluster={handleConvertClusterToBlock}
         onPlotClusterGraph={(cluster) => {
@@ -747,17 +1082,52 @@ export default function PlaygroundCanvasContainer() {
         onExportCanvas={handleExportCanvas}
         showLiveOcr={notesMode ? true : showLiveOcr}
         setShowLiveOcr={notesMode ? undefined : setShowLiveOcr}
+        ocrMode={ocrMode}
+        setOcrMode={setOcrMode}
         notesMode={notesMode}
         setNotesMode={(mode) => {
           setNotesMode(mode);
           // Auto-enable Live OCR when entering Notes Mode
           if (mode) {
             setShowLiveOcr(true);
+            setOcrMode('live');
           }
         }}
         isRecording={isRecordingAudio}
         onToggleRecordAudio={handleToggleRecordAudio}
         onInsertImage={handleInsertImage}
+      />
+
+      {/* Floating Ambient Background Music Player */}
+      <BackgroundMusicPlayer />
+
+      {/* Unsaved Changes WPS Prompt Modal */}
+      <UnsavedChangesModal
+        isOpen={isUnsavedModalOpen}
+        onClose={() => {
+          setIsUnsavedModalOpen(false);
+          setPendingTargetUrl(null);
+        }}
+        pageTitle={pages[currentPageIndex]?.title || 'Page 1'}
+        onSave={() => {
+          handleManualSave();
+          setIsUnsavedModalOpen(false);
+          if (pendingTargetUrl) {
+            router.push(pendingTargetUrl);
+            setPendingTargetUrl(null);
+          }
+        }}
+        onDontSave={() => {
+          setIsUnsavedModalOpen(false);
+          if (pendingTargetUrl) {
+            router.push(pendingTargetUrl);
+            setPendingTargetUrl(null);
+          }
+        }}
+        onCancel={() => {
+          setIsUnsavedModalOpen(false);
+          setPendingTargetUrl(null);
+        }}
       />
     </div>
   );

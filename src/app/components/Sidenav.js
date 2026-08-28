@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import "../styles/sidebar.css";
 import Image from 'next/image';
 
@@ -90,10 +91,24 @@ const UNITS = [
 ];
 
 const Sidebar = () => {
+  const pathname = usePathname();
   const [isClosed, setIsClosed] = useState(true);
   const [activeSubMenu, setActiveSubMenu] = useState(null);
   const [activeUnit, setActiveUnit] = useState(null); 
   const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  const handleNavClick = (e, targetUrl) => {
+    if (
+      typeof window !== 'undefined' &&
+      pathname === '/Playground' &&
+      targetUrl !== '/Playground' &&
+      window.__NETZ_PLAYGROUND_HAS_UNSAVED_CHANGES__ &&
+      window.__NETZ_OPEN_UNSAVED_MODAL__
+    ) {
+      e.preventDefault();
+      window.__NETZ_OPEN_UNSAVED_MODAL__(targetUrl);
+    }
+  };
 
   const toggleSidebar = useCallback(() => {
     setIsClosed(prev => !prev);
@@ -201,7 +216,7 @@ const Sidebar = () => {
             onMouseLeave={() => setHoveredIndex(null)}
             className="relative"
           >
-            <Link href={page.route} className="icon-link">
+            <Link href={page.route} onClick={(e) => handleNavClick(e, page.route)} className="icon-link">
               <Image src={page.src} alt={`${page.title} Icon`} width={30} height={30}/>
               <span className="link-name">{page.title}</span>
               {hoveredIndex === index && isClosed && (

@@ -1,86 +1,143 @@
 /**
  * Equation-to-Graph Generator & Multi-Curve Dataset Appender
- * Evaluates LaTeX math equations to continuous (x, y) plot datasets.
- * Supports multi-curve drag-and-drop linking onto existing GraphBlocks.
+ * Evaluates LaTeX math equations to continuous high-resolution (x, y) plot datasets.
+ * Uses mathjs compiler for robust support of polynomials, trig, log, exp, & rational functions.
  */
 
-import { evaluateMath } from '../../../utils/evaluateMath';
+import { create, all } from 'mathjs';
 import { scopeManager } from './scopeManager';
 
-const CURVE_COLORS = [
+const math = create(all);
+
+export const CURVE_COLORS = [
   '#3B82F6', // Electric Blue
   '#10B981', // Emerald
-  '#8B5CF6', // Purple
+  '#8B5CF6', // Vivid Purple
   '#F43F5E', // Rose
   '#F59E0B', // Amber
   '#06B6D4', // Cyan
 ];
 
 /**
- * Normalizes LaTeX equation string into standard math expression (e.g., "y = x^2 - 4" -> "x^2 - 4").
+ * Normalizes LaTeX equation string into standard mathjs expression string.
  */
 export function extractExpressionFromLatex(latexStr) {
   if (!latexStr || typeof latexStr !== 'string') return '';
 
-  let clean = latexStr.replace(/\\frac{([^}]+)}{([^}]+)}/g, '($1)/($2)');
-  clean = clean.replace(/\\cdot/g, '*');
-  clean = clean.replace(/\\times/g, '*');
+  let str = latexStr.trim();
 
-  // Strip "y =" or "f(x) =" prefix
-  if (clean.includes('=')) {
-    const parts = clean.split('=');
-    // If left side is y or f(x), take right side
-    if (parts[0].trim().match(/^(y|f\(x\)|g\(x\)|z)$/i)) {
-      clean = parts[1].trim();
+  // Strip leading variable assignment: "y =", "f(x) =", "g(x) =", "z ="
+  if (str.includes('=')) {
+    const parts = str.split('=');
+    const left = parts[0].trim();
+    if (/^(y|f\(x\)|g\(x\)|z)$/i.test(left)) {
+      str = parts.slice(1).join('=').trim();
     } else {
-      clean = parts[0].trim();
+      str = parts[0].trim();
     }
   }
 
-  return clean;
+  // Convert LaTeX fractions \frac{a}{b} -> ((a)/(b))
+  while (/\\frac\{([^{}]+)\}\{([^{}]+)\}/.test(str)) {
+    str = str.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '(($1)/($2))');
+  }
+
+  // Convert LaTeX square roots \sqrt{x} -> sqrt(x)
+  str = str.replace(/\\sqrt\{([^{}]+)\}/g, 'sqrt($1)');
+  str = str.replace(/\\sqrt/g, 'sqrt');
+
+  // Convert LaTeX trig & function symbols
+  str = str.replace(/\\sin/g, 'sin');
+  str = str.replace(/\\cos/g, 'cos');
+  str = str.replace(/\\tan/g, 'tan');
+  str = str.replace(/\\log/g, 'log10');
+  str = str.replace(/\\ln/g, 'log');
+  str = str.replace(/\\abs\{([^{}]+)\}/g, 'abs($1)');
+  str = str.replace(/\\cdot/g, '*');
+  str = str.replace(/\\times/g, '*');
+  str = str.replace(/\\pi/gi, 'pi');
+
+  // Convert exponent notation x^{2} -> x^(2)
+  str = str.replace(/\^\{([^}]+)\}/g, '^($1)');
+
+  // Fix implicit multiplication: 2x -> 2*x, 3.5x -> 3.5*x, 4(x) -> 4*(x), x(x) -> x*(x)
+  str = str.replace(/(\d+)([a-zA-Z])/g, '$1*$2');
+  str = str.replace(/(\d+)\(/g, '$1*(');
+  str = str.replace(/([a-zA-Z0-9])(sin|cos|tan|log|ln|sqrt|abs)\b/g, '$1*$2');
+  str = str.replace(/\)([\(a-zA-Z0-9])/g, ')*$1');
+
+  return str;
 }
 
 /**
- * Generates continuous (x, y) dataset for a LaTeX equation.
+ * Generates continuous high-resolution (x, y) plot dataset using mathjs.
  */
-export function generateGraphDatasetFromLatex(latexStr, label = 'f(x)', domain = [-10, 10], colorIndex = 0) {
+export function generateGraphDatasetFromLatex(latexStr, label = '', domain = [-10, 10], colorIndex = 0) {
   const expr = extractExpressionFromLatex(latexStr);
   if (!expr) return null;
 
   const points = [];
   const labels = [];
-  const step = (domain[1] - domain[0]) / 200;
-  const currentScope = scopeManager.getScopeObject();
+  const numSteps = 400; // High resolution sampling for smooth curves
+  const minX = domain[0];
+  const maxX = domain[1];
+  const step = (maxX - minX) / numSteps;
 
-  for (let x = domain[0]; x <= domain[1]; x += step) {
-    labels.push(Number(x.toFixed(2)));
+  let compiled = null;
+  try {
+    compiled = math.compile(expr);
+  } catch (err) {
+    console.warn('[equationToGraph] Failed to compile math expression:', expr, err);
+    return null;
+  }
+
+  const currentScope = scopeManager.getScopeObject();
+  let prevY = null;
+
+  for (let i = 0; i <= numSteps; i++) {
+    const x = Number((minX + i * step).toFixed(3));
+    labels.push(x);
 
     try {
-      // Evaluate expression with current x and global CAS scope
-      const evalScope = { ...currentScope, x };
-      const yVal = evaluateMath(expr, evalScope);
+      let yVal = compiled.evaluate({ ...currentScope, x, e: Math.E, pi: Math.PI });
 
-      if (typeof yVal === 'number' && !isNaN(yVal) && isFinite(yVal)) {
-        points.push({ x: Number(x.toFixed(2)), y: Number(yVal.toFixed(3)) });
+      // Handle Complex numbers or object outputs from mathjs
+      if (yVal && typeof yVal === 'object' && 're' in yVal) {
+        yVal = Math.abs(yVal.im) < 1e-9 ? yVal.re : NaN;
+      }
+
+      if (typeof yVal === 'number' && !isNaN(yVal) && isFinite(yVal) && Math.abs(yVal) <= 1000) {
+        // Asymptote / Singularity Detection (e.g. tan(x) or 1/x jumping from +1000 to -1000)
+        if (prevY !== null && Math.abs(yVal - prevY) > 80) {
+          points.push({ x, y: null });
+        } else {
+          points.push({ x, y: Number(yVal.toFixed(4)) });
+        }
+        prevY = yVal;
       } else {
-        points.push({ x: Number(x.toFixed(2)), y: null });
+        points.push({ x, y: null });
+        prevY = null;
       }
     } catch (e) {
-      points.push({ x: Number(x.toFixed(2)), y: null });
+      points.push({ x, y: null });
+      prevY = null;
     }
   }
 
   const strokeColor = CURVE_COLORS[colorIndex % CURVE_COLORS.length];
+  const displayLabel = label || latexStr || expr;
 
   return {
-    label: label || expr,
+    label: displayLabel,
+    rawExpr: expr,
+    latex: latexStr,
     data: points,
     borderColor: strokeColor,
-    backgroundColor: strokeColor + '20',
-    borderWidth: 2.5,
-    tension: 0.3,
+    backgroundColor: strokeColor + '15',
+    borderWidth: 3,
+    tension: 0.2,
     pointRadius: 0,
-    pointHoverRadius: 5,
+    pointHoverRadius: 6,
   };
 }
 
